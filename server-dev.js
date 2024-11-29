@@ -1,6 +1,8 @@
 import fs from 'fs';
 import express from 'express';
+import mongoose from 'mongoose'
 import { createServer } from 'vite';
+import testMongoSchema from "./models/mongoosetest.js";
 
 const app = express();
 
@@ -10,6 +12,29 @@ const vite = await createServer({
     },
     appType: 'custom',
 });
+
+// MongoDB Linking Test Code (To be removed / replaced at some point)
+
+/* TODO : Eventually run any mongoDB linking on an actual external server we connect to instead of just running localhost
+     although that might be out the scope of this project */
+
+const dbURI = "mongodb://localhost:27017/testDB"
+
+mongoose.connect(dbURI);
+
+// testFun();
+// async function testFun(){
+//     try {
+//         //const testInsert = await testMongoSchema.create({testName : "exampleName"});
+//         //console.log ("firstlog : " + testInsert);
+//         const testVar = await testMongoSchema.find({testName : "exampleName"})
+//         console.log("testvarprint " + testVar);
+//     } catch (e) {
+//         console.log(e.message);
+//     }
+// }
+
+/// End of example Mongoose code
 
 app.use(vite.middlewares);
 
