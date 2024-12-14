@@ -20,7 +20,7 @@ const vite = await createServer({
 
 const dbURI = "mongodb://localhost:27017/testDB"
 
-mongoose.connect(dbURI);
+//mongoose.connect(dbURI);
 
 // testFun();
 // async function testFun(){
@@ -35,6 +35,39 @@ mongoose.connect(dbURI);
 // }
 
 /// End of example Mongoose code
+
+// Play page route.
+app.get("/play", (req, res) => {
+    try{
+        console.log("Play")
+        res.status(200).send("Play");
+    }
+    catch{
+        res.status(500).end(error);
+    }
+})
+
+// My Stats page route.
+app.get("/my-stats", (req, res) => {
+    try{
+        console.log("My Stats")
+        res.status(200).send("My Stats");
+    }
+    catch{
+        res.status(500).end(error);
+    }
+})
+
+// User Stats page route.
+app.get("/user-stats", (req, res) => {
+    try{
+        console.log("User Stats")
+        res.status(200).send("User Stats");
+    }
+    catch{
+        res.status(500).end(error);
+    }
+})
 
 app.use(vite.middlewares);
 
