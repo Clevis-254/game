@@ -21,9 +21,9 @@ export function Banner(){
 
                 <div className="navbar-collapse collapse show" id="navbarsExample07">
                   <ul className="navbar-nav mr-auto">
-                    <li className="nav-item active">
+                    <li className="nav-item">
                       <a className="nav-link" href="/play">
-                        Play <span className="sr-only"></span>
+                        Play
                       </a>
                     </li>
                     <li className="nav-item">
