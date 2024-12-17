@@ -3,6 +3,8 @@ import express from 'express';
 import mongoose from 'mongoose'
 import { createServer } from 'vite';
 import testMongoSchema from "./models/mongoosetest.js";
+import ReactDOMServer from 'react-dom/server';
+import React from 'react';
 
 const app = express();
 
@@ -37,7 +39,7 @@ const dbURI = "mongodb://localhost:27017/testDB"
 /// End of example Mongoose code
 
 // Play page route.
-app.get("/play", (req, res) => {
+app.get("/play", async (req, res) => {
     try{
         console.log("Play")
         res.status(200).send("Play");
@@ -48,26 +50,72 @@ app.get("/play", (req, res) => {
 })
 
 // My Stats page route.
-app.get("/my-stats", (req, res) => {
+app.get("/my-stats", async (req, res) => {
     try{
         console.log("My Stats")
-        res.status(200).send("My Stats");
-    }
-    catch{
-        res.status(500).end(error);
-    }
+
+        // Dynamically load the React component using Vite
+            const module = await vite.ssrLoadModule('src/MyStats.jsx');
+            const MyStats = module.default;
+
+            // Render the React component to a string
+            const html = ReactDOMServer.renderToString(React.createElement(MyStats));
+
+            // Get the template (index.html)
+            const template = await vite.transformIndexHtml(req.originalUrl, fs.readFileSync('index.html', 'utf-8'));
+
+            // Fetch any necessary server data
+            const { getServerData } = await vite.ssrLoadModule('/src/function.js');
+            const data = await getServerData();
+
+            // Inject the script with server-side data
+            const script = `<script>window.__data__=${JSON.stringify(data)}</script>`;
+
+            // Combine the rendered HTML, the data, and the template
+            const fullHtml = template.replace(`<!--outlet-->`, `${html} ${script}`);
+
+            // Send the final HTML to the client
+            res.status(200).set({ 'Content-Type': 'text/html' }).end(fullHtml);
+
+        } catch (error) {
+            console.error('Error rendering MyStats:', error);
+            res.status(500).send('Internal Server Error');
+        }
 })
 
 // User Stats page route.
-app.get("/user-stats", (req, res) => {
-    try{
-        console.log("User Stats")
-        res.status(200).send("User Stats");
+app.get("/user-stats", async (req, res) => {
+    try {
+        console.log("User Stats");
+
+        // Dynamically load the React component using Vite
+        const module = await vite.ssrLoadModule('src/UserStats.jsx');
+        const UserStats = module.default;
+
+        // Render the React component to a string
+        const html = ReactDOMServer.renderToString(React.createElement(UserStats));
+
+        // Get the template (index.html)
+        const template = await vite.transformIndexHtml(req.originalUrl, fs.readFileSync('index.html', 'utf-8'));
+
+        // Fetch any necessary server data
+        const { getServerData } = await vite.ssrLoadModule('/src/function.js');
+        const data = await getServerData();
+
+        // Inject the script with server-side data
+        const script = `<script>window.__data__=${JSON.stringify(data)}</script>`;
+
+        // Combine the rendered HTML, the data, and the template
+        const fullHtml = template.replace(`<!--outlet-->`, `${html} ${script}`);
+
+        // Send the final HTML to the client
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(fullHtml);
+
+    } catch (error) {
+        console.error('Error rendering UserStats:', error);
+        res.status(500).send('Internal Server Error');
     }
-    catch{
-        res.status(500).end(error);
-    }
-})
+});
 
 app.use(vite.middlewares);
 
