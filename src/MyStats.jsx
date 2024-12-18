@@ -1,5 +1,6 @@
 import React from 'react';
 import { Banner } from "./src/Banner";
+import './styles/statsPage.css';
 
 export function MyStats(){
     return(
@@ -8,7 +9,7 @@ export function MyStats(){
             <h1>My Stats</h1>
             <hr /><br />
 
-            <div>
+            <div className="statSection">
                 <h2>Time Played</h2>
                 <h3>00:00:00</h3>
 
