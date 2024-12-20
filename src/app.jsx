@@ -1,14 +1,18 @@
-import React from "react"
+// import React from "react"
 import { Banner } from "./Banner"
 import { Play } from "./Play"
+import { Console } from "./Console"
 
 const App = () => {
-  return (
-    <>
-        <Banner />
-        <Play />
-    </>
-  )
+    
+    return (
+        <>
+            <Banner/>
+            <Play/>
+            <Console/>
+            
+        </>
+    )
 }
 
 export default App
