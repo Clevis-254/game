@@ -1,7 +1,9 @@
-.statSection {
-    align-self: center;
-    padding-right: 20px;
-    text-align: center;
+.statSection1 {
+    width: 50%;
     float: left;
-    background-color: red;
+    padding-left: 17%;
+}
+
+img{
+    width:30%
 }

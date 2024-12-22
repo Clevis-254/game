@@ -1,38 +1,37 @@
 import React from 'react';
 import { Banner } from "./src/Banner";
-import './styles/statsPage.css';
 
 export function MyStats(){
     return(
         <>
             <Banner />
-            <h1>My Stats</h1>
+            <h1 style={{textAlign: "center"}}>My Stats</h1>
             <hr /><br />
 
-            <div className="statSection">
+            <div className="text-center">
                 <h2>Time Played</h2>
                 <h3>00:00:00</h3>
-
+                <br />
                 <h2>Audio Files Played</h2>
                 <h3>0</h3>
+                <br />
+                <h2>Audio File Play Count</h2>
+                <h3>hit: 0</h3>
+                <h3>miss: 0</h3>
+                <h3>damaged: 0</h3>
+                <h3>stamina: 0</h3>
             </div>
 
             <br />
 
-            <h2>Audio File Play Count</h2>
-            <h3>hit: 0</h3>
-            <h3>miss: 0</h3>
-            <h3>damaged: 0</h3>
-            <h3>stamina: 0</h3>
-
-            <br />
-
-            <h2>Command Usage</h2>
-            <h3>Repeat: 0</h3>
-            <h3>End Game: 0</h3>
-            <h3>Go Faster: 0</h3>
-            <h3>Go Slower: 0</h3>
-            <h3>Restart: 0</h3>
+            <div className="text-center">
+                <h2>Command Usage</h2>
+                <h3>Repeat: 0</h3>
+                <h3>End Game: 0</h3>
+                <h3>Go Faster: 0</h3>
+                <h3>Go Slower: 0</h3>
+                <h3>Restart: 0</h3>
+            </div>
 
             <br /><hr />
 
