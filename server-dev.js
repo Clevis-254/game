@@ -37,7 +37,39 @@ const dbURI = "mongodb://localhost:27017/testDB"
 // }
 
 /// End of example Mongoose code
+// basic functions
+app.get("/login", async (req, res) => {
+    try{
+        console.log("logging in")
 
+        // Dynamically load the React component using Vite
+        const module = await vite.ssrLoadModule('src/login.jsx');
+        const Play = module.default;
+
+        // Render the React component to a string
+        const html = ReactDOMServer.renderToString(React.createElement(Play));
+
+        // Get the template (index.html)
+        const template = await vite.transformIndexHtml(req.originalUrl, fs.readFileSync('index.html', 'utf-8'));
+
+        // Fetch any necessary server data
+        const { getServerData } = await vite.ssrLoadModule('/src/function.js');
+        const data = await getServerData();
+
+        // Inject the script with server-side data
+        const script = `<script>window.__data__=${JSON.stringify(data)}</script>`;
+
+        // Combine the rendered HTML, the data, and the template
+        const fullHtml = template.replace(`<!--outlet-->`, `${html} ${script}`);
+
+        // Send the final HTML to the client
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(fullHtml);
+
+    } catch (error) {
+        console.error('Error rendering Play:', error);
+        res.status(500).send('Internal Server Error');
+    }
+})
 // Play page route.
 app.get("/play", async (req, res) => {
     try{
