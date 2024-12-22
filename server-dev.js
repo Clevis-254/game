@@ -2,11 +2,19 @@ import fs from 'fs';
 import express from 'express';
 import mongoose from 'mongoose'
 import { createServer } from 'vite';
-import testMongoSchema from "./models/mongoosetest.js";
+import consoleLogHistorySchema from "./models/consoleLogHistory.js";
 import ReactDOMServer from 'react-dom/server';
 import React from 'react';
+import bodyParser from "body-parser";
 
 const app = express();
+
+app.use(bodyParser.json())
+app.use(
+    bodyParser.urlencoded({
+        extended: true,
+    }),
+);
 
 const vite = await createServer({
     server: {
@@ -20,9 +28,9 @@ const vite = await createServer({
 /* TODO : Eventually run any mongoDB linking on an actual external server we connect to instead of just running localhost
      although that might be out the scope of this project */
 
-const dbURI = "mongodb://localhost:27017/testDB"
+const dbURI = "mongodb://localhost:27017/projectDatabase"
 
-//mongoose.connect(dbURI);
+mongoose.connect(dbURI);
 
 // testFun();
 // async function testFun(){
@@ -37,6 +45,59 @@ const dbURI = "mongodb://localhost:27017/testDB"
 // }
 
 /// End of example Mongoose code
+
+mongoose.set("debug", true)
+// mongoose.set("lean", false)
+app.get("/get_console_history", async (req, res) => {
+    try {
+        console.log("Get console history")
+        // TODO : integrate with the login system to get the correct userID
+        const consoleHistory = await consoleLogHistorySchema.find({"UserID" : 0})
+        
+        res.json(consoleHistory)
+
+    } catch (error) {
+        console.error('Error getting console history:', error);
+        res.status(500).send('Internal Server Error');
+    }
+})
+
+// Route for posting a new console message to the database
+app.post("/post_console_history", async (req, res) => {
+  try {
+      const { MessageID, Message, Speaker } = req.body
+
+      // TODO : integrate with the login system to get the correct userID
+      const updatedDocument = await consoleLogHistorySchema.findOneAndUpdate(
+          {"UserID" : 0},
+          { $push : { Messages : { MessageID, Message, Speaker} } }
+      )
+      if (!updatedDocument) {
+          return res.status(404).send('Document not found');
+      }
+  } catch (error) {
+      console.error('Error posting to console history : ', error);
+      res.status(500).send('Internal Server Error');
+  }
+})
+
+// POST route for deleting all console history
+app.post("/post_clear_console", async (req, res) => {
+    try {
+        // TODO : integrate with the login system to get the correct userID
+        const updatedDocument = await consoleLogHistorySchema.findOneAndUpdate(
+            {"UserID" : 0},
+            { $set : { Messages : [] } }
+        )
+        if (!updatedDocument) {
+            return res.status(404).send('Document not found');
+        }
+    } catch (error) {
+        console.error('Error posting to clear console history : ', error);
+        res.status(500).send('Internal Server Error');
+    }
+
+})
 
 // Play page route.
 app.get("/play", async (req, res) => {
@@ -121,15 +182,16 @@ app.get("/user-stats", async (req, res) => {
         // Get the template (index.html)
         const template = await vite.transformIndexHtml(req.originalUrl, fs.readFileSync('index.html', 'utf-8'));
 
-        // Fetch any necessary server data
-        const { getServerData } = await vite.ssrLoadModule('/src/function.js');
-        const data = await getServerData();
-
-        // Inject the script with server-side data
-        const script = `<script>window.__data__=${JSON.stringify(data)}</script>`;
+        // // Fetch any necessary server data
+        // const { getServerData } = await vite.ssrLoadModule('/src/function.js');
+        // const data = await getServerData();
+        //
+        // // Inject the script with server-side data
+        // const script = `<script>window.__data__=${JSON.stringify(data)}</script>`;
 
         // Combine the rendered HTML, the data, and the template
-        const fullHtml = template.replace(`<!--outlet-->`, `${html} ${script}`);
+        // const fullHtml = template.replace(`<!--outlet-->`, `${html} ${script}`);
+        const fullHtml = template.replace(`<!--outlet-->`, `${html}`);
 
         // Send the final HTML to the client
         res.status(200).set({ 'Content-Type': 'text/html' }).end(fullHtml);

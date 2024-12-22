@@ -1,7 +1,7 @@
-// import React from "react"
+import React from "react"
 import { Banner } from "./Banner"
 import { Play } from "./Play"
-import { Console } from "./Console"
+import { Console } from "./Console/Console.jsx"
 
 const App = () => {
     

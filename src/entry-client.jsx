@@ -1,6 +1,6 @@
 import { hydrateRoot } from 'react-dom/client';
 
-import App from './app';
+import App from './App.jsx';
 
 let data;
 
