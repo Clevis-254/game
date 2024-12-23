@@ -5,7 +5,10 @@ import { createServer } from 'vite';
 import testMongoSchema from "./models/mongoosetest.js";
 import ReactDOMServer from 'react-dom/server';
 import React from 'react';
+//importing the user schema 
+import User from './data.js';
 
+//importing express into the server
 const app = express();
 
 const vite = await createServer({
@@ -15,28 +18,32 @@ const vite = await createServer({
     appType: 'custom',
 });
 
-// MongoDB Linking Test Code (To be removed / replaced at some point)
+// MongoDB Linking Test Code
+const dbURI = "mongodb://localhost:27017/testDB";
 
-/* TODO : Eventually run any mongoDB linking on an actual external server we connect to instead of just running localhost
-     although that might be out the scope of this project */
+// Updated MongoDB connection using async/await
+try {
+    await mongoose.connect(dbURI);
+    console.log("Connected to MongoDB");
+} catch (error) {
+    console.error("Error connecting to MongoDB:", error);
+}
 
-const dbURI = "mongodb://localhost:27017/testDB"
-
-//mongoose.connect(dbURI);
-
-// testFun();
-// async function testFun(){
-//     try {
-//         //const testInsert = await testMongoSchema.create({testName : "exampleName"});
-//         //console.log ("firstlog : " + testInsert);
-//         const testVar = await testMongoSchema.find({testName : "exampleName"})
-//         console.log("testvarprint " + testVar);
-//     } catch (e) {
-//         console.log(e.message);
-//     }
-// }
-
-/// End of example Mongoose code
+// Test user creation
+async function save() {
+    try {
+        const user = await User.create({
+            FirstName: "Clevis",
+            LastName: "Gikenyi",
+            email: "s@email.com",
+            Password: "1234"
+        });
+        console.log(user);
+    } catch (error) {
+        console.error("Error creating user:", error);
+    }
+}
+save();
 // basic functions
 app.get("/login", async (req, res) => {
     try{
@@ -66,7 +73,16 @@ app.get("/login", async (req, res) => {
         res.status(200).set({ 'Content-Type': 'text/html' }).end(fullHtml);
 
     } catch (error) {
-        console.error('Error rendering Play:', error);
+        console.error('Error rendering Logging in:', error);
+        res.status(500).send('Internal Server Error');
+    }
+})
+
+app.post("/login", async(req,res) => {
+    try{
+
+    } catch (error){
+        console.error('Error rendering Logging in:', error);
         res.status(500).send('Internal Server Error');
     }
 })
