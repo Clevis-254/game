@@ -5,6 +5,7 @@ import { createServer } from 'vite';
 import testMongoSchema from "./models/mongoosetest.js";
 import ReactDOMServer from 'react-dom/server';
 import React from 'react';
+import session from 'express-session';
 //importing the user schema 
 import User from './data.js';
 
@@ -17,7 +18,16 @@ const vite = await createServer({
     },
     appType: 'custom',
 });
-
+// creating authentication session
+app.use(session({
+    secret: 'c5afbf2a6d07b53a8ac4f3ac154d2138bf4a89a39037d8caf47db0ed6d8469e08b94644a1c9d47852fe7ac9939bbaec7c8c7a23113c8a824cd27b6e0912b7804', // secret key
+    resave: false,  // Do not save the session if it hasn't changed
+    saveUninitialized: false,  // Do not create a session until something is stored
+    cookie: {
+        maxAge: 1000 * 60 * 60 * 24,  // 1 day cookie lifetime
+        secure: true  // Set to true if you're using HTTPS
+    }
+}));
 // MongoDB Linking Test Code
 const dbURI = "mongodb://localhost:27017/testDB";
 
@@ -29,7 +39,7 @@ try {
     console.error("Error connecting to MongoDB:", error);
 }
 
-// Test user creation
+// user samples 
 async function save() {
     try {
         const user = await User.create({
@@ -39,11 +49,31 @@ async function save() {
             Password: "1234"
         });
         console.log(user);
+        const admin = await User.create({
+            FirstName: "Admin",
+            LastName: "User",
+            email: "admin@email.com",
+            Password: "admin1234",
+            UserType: "admin"
+        });
+        console.log(admin)
     } catch (error) {
         console.error("Error creating user:", error);
     }
 }
 save();
+// authenticated function. checks whether you are authenticated or not
+function ensureAuthenticated(req, res, next) {
+    if (req.isAuthenticated()) {
+        // If the user is authenticated, proceed to the next function (e.g., route handler)
+        return next();
+    } else {
+        // If not authenticated, redirect to the login page
+        return res.redirect('/login');  // Redirects to the login page
+    }
+}
+
+
 // basic functions
 app.get("/login", async (req, res) => {
     try{
@@ -81,11 +111,24 @@ app.get("/login", async (req, res) => {
 app.post("/login", async(req,res) => {
     try{
 
+        req.session.isAuthenticated = true;
     } catch (error){
         console.error('Error rendering Logging in:', error);
         res.status(500).send('Internal Server Error');
     }
 })
+
+// logout route
+app.post('/logout', (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            return res.status(500).json({ message: 'Logout failed' });
+        }
+        res.clearCookie('connect.sid');  // Clear the session cookie
+        res.redirect('/login');
+    });
+});
+
 // Play page route.
 app.get("/play", async (req, res) => {
     try{
