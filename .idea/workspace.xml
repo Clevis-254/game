@@ -4,9 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="59f16aa9-adf7-4452-b25d-4fbd1e193aec" name="Changes" comment="MyStats and UserStats components finished.">
+    <list default="true" id="59f16aa9-adf7-4452-b25d-4fbd1e193aec" name="Changes" comment="Flex box layout implemented.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/node_modules/.vite/deps/_metadata.json" beforeDir="false" afterPath="$PROJECT_DIR$/node_modules/.vite/deps/_metadata.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/MyStats.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/MyStats.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/styles/statsPage.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/styles/statsPage.css" afterDir="false" />
     </list>
@@ -120,7 +119,15 @@
       <option name="project" value="LOCAL" />
       <updated>1734451999114</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Flex box layout implemented.">
+      <option name="closed" value="true" />
+      <created>1735241164309</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1735241164309</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -132,6 +139,7 @@
     <MESSAGE value="Fixed merge conflicts PROPERLY" />
     <MESSAGE value="help" />
     <MESSAGE value="MyStats and UserStats components finished." />
-    <option name="LAST_COMMIT_MESSAGE" value="MyStats and UserStats components finished." />
+    <MESSAGE value="Flex box layout implemented." />
+    <option name="LAST_COMMIT_MESSAGE" value="Flex box layout implemented." />
   </component>
 </project>
