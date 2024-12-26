@@ -1,9 +1,28 @@
-.statSection1 {
-    width: 50%;
+.statSection {
+    width: 30%;
+    height: 30%;
     float: left;
-    padding-left: 17%;
+    border-radius: 25px;
+    background: lightgray;
+    padding: 10px;
+    border: 2px solid black;
+    margin: 20px;
+    text-align: center;
+    justify-content: center;
+}
+
+.statSectionHeatmap {
+    width: 90%;
+    border-radius: 25px;
+    padding: 10px;
+    border: 2px solid black;
+    margin: 20px;
+    justify-content: center;
+    float: left;
 }
 
 img{
-    width:30%
+    border-radius: 15px;
+    align-self: center;
+    width:90%;
 }
