@@ -1,20 +1,41 @@
-import React, { useState } from 'react';
-import './Login.css'; // Custom CSS for extra styling
+import React from 'react';
+import './Login.css';
+import { useForm } from 'react-hook-form';
 
-const Login = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+export const Login = () => {
+  const { register, handleSubmit, formState: { errors } } = useForm();
 
-  const handleSubmit = (e) => {
+  const onSubmit = async (data, e) => {
     e.preventDefault();
     
-    if (username.includes('@')) {
-      alert('It looks like you are using an email. Please ensure it is a valid username or use the email format properly.');
+    try {
+      // Log the data to verify form submission is working
+      console.log("Form submitted with data:", data);
+      
+      // Once you've verified the form submission works, 
+      // you can add your fetch/axios call here:
+      /*
+      const response = await fetch('http://localhost:YOUR_PORT/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      const result = await response.json();
+      console.log('Success:', result);
+      */
+      
+    } catch (error) {
+      console.error('Error:', error);
     }
-
-    console.log(`Username: ${username}, Password: ${password}`);
-    // Add your login logic here
   };
+
+  // This prevents the default form submission
+  const formSubmit = handleSubmit((data, e) => {
+    onSubmit(data, e);
+  });
 
   return (
     <div className="container mt-5">
@@ -23,10 +44,11 @@ const Login = () => {
           <div className="card">
             <div className="card-body">
               <div className="text-center mb-4">
-              <img src="/assets/Logo_2.png" alt="Logo" className="img-fluid logo" />
+                <img src="/assets/Logo_2.png" alt="Logo" className="img-fluid logo" />
               </div>
               <h3 className="card-title text-center">Login</h3>
-              <form onSubmit={handleSubmit}>
+              {/* Use formSubmit instead of handleSubmit(onSubmit) */}
+              <form onSubmit={formSubmit} noValidate>
                 <div className="form-group mb-3">
                   <label htmlFor="username">Username</label>
                   <input
@@ -34,10 +56,9 @@ const Login = () => {
                     className="form-control"
                     id="username"
                     placeholder="Enter username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required
+                    {...register('username', { required: 'Username is required' })}
                   />
+                  {errors.username && <span className="text-danger">{errors.username.message}</span>}
                 </div>
                 <div className="form-group mb-3">
                   <label htmlFor="password">Password</label>
@@ -46,12 +67,14 @@ const Login = () => {
                     className="form-control"
                     id="password"
                     placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
+                    {...register('password', { required: 'Password is required' })}
                   />
+                  {errors.password && <span className="text-danger">{errors.password.message}</span>}
                 </div>
-                <button type="submit" className="btn btn-primary w-100">
+                <button 
+                  type="submit" 
+                  className="btn btn-primary w-100"
+                >
                   Login
                 </button>
               </form>

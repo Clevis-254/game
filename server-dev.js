@@ -6,12 +6,16 @@ import testMongoSchema from "./models/mongoosetest.js";
 import ReactDOMServer from 'react-dom/server';
 import React from 'react';
 import session from 'express-session';
+import bcrypt from 'bcrypt';
 //importing the user schema 
 import User from './data.js';
 
 //importing express into the server
 const app = express();
 
+//  middleware configurations
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 const vite = await createServer({
     server: {
         middlewareMode: true,
@@ -72,51 +76,48 @@ function ensureAuthenticated(req, res, next) {
         return res.redirect('/login');  // Redirects to the login page
     }
 }
-
-
 // basic functions
 app.get("/login", async (req, res) => {
-    try{
+    try {
         console.log("logging in")
 
-        // Dynamically load the React component using Vite
-        const module = await vite.ssrLoadModule('src/login.jsx');
-        const Play = module.default;
+        // Load the server entry point for login
+        const { render } = await vite.ssrLoadModule('src/entry-server-login.jsx');
+        
+        // Render the component
+        const appHtml = render();
+        
+        // Get and transform the template
+        let template = await vite.transformIndexHtml(req.originalUrl, fs.readFileSync('index.html', 'utf-8'));
+        
+        // Insert the rendered app and the client script tag
+        const html = template
+            .replace('<!--outlet-->', appHtml)
+            .replace(
+                '</body>',
+                `<script type="module" src="/src/entry-client-login.jsx"></script></body>`
+            );
 
-        // Render the React component to a string
-        const html = ReactDOMServer.renderToString(React.createElement(Play));
-
-        // Get the template (index.html)
-        const template = await vite.transformIndexHtml(req.originalUrl, fs.readFileSync('index.html', 'utf-8'));
-
-        // Fetch any necessary server data
-        const { getServerData } = await vite.ssrLoadModule('/src/function.js');
-        const data = await getServerData();
-
-        // Inject the script with server-side data
-        const script = `<script>window.__data__=${JSON.stringify(data)}</script>`;
-
-        // Combine the rendered HTML, the data, and the template
-        const fullHtml = template.replace(`<!--outlet-->`, `${html} ${script}`);
-
-        // Send the final HTML to the client
-        res.status(200).set({ 'Content-Type': 'text/html' }).end(fullHtml);
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
 
     } catch (error) {
-        console.error('Error rendering Logging in:', error);
+        console.error('Error rendering Login:', error);
         res.status(500).send('Internal Server Error');
     }
 })
 
-app.post("/login", async(req,res) => {
-    try{
-
-        req.session.isAuthenticated = true;
-    } catch (error){
-        console.error('Error rendering Logging in:', error);
-        res.status(500).send('Internal Server Error');
+// post route 
+// Add this to your Express server file
+app.post("/login", express.json(), async (req, res) => {
+    try {
+        console.log("Received login data:", req.body);
+        // Here you'll eventually handle the login logic
+        res.json({ success: true, message: "Login data received" });
+    } catch (error) {
+        console.error('Error processing login:', error);
+        res.status(500).json({ success: false, message: "Internal server error" });
     }
-})
+});
 
 // logout route
 app.post('/logout', (req, res) => {
