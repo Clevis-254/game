@@ -143,6 +143,10 @@ app.get("/user-stats", async (req, res) => {
 
 app.use(vite.middlewares);
 
+app.use('*', async (req, res) => {
+    res.redirect("/my-stats")
+})
+
 app.listen(4173, () => {
     console.log('http://localhost:4173.');
 });
