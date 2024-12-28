@@ -60,6 +60,7 @@ app.post("/post_console_history", async (req, res) => {
       if (!updatedDocument) {
           return res.status(404).send('Document not found');
       }
+      return res.status(200).send("Request to post new message to DB successful")
   } catch (error) {
       console.error('Error posting to console history : ', error);
       res.status(500).send('Internal Server Error');
@@ -78,6 +79,7 @@ app.post("/post_clear_console", async (req, res) => {
         if (!updatedDocument) {
             return res.status(404).send('Document not found');
         }
+        return res.status(200).send("Request to clear messages sent to DB successfully")
     } catch (error) {
         console.error('Error posting to clear console history : ', error);
         res.status(500).send('Internal Server Error');
