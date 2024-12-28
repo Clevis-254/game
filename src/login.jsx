@@ -4,8 +4,6 @@ import { useForm } from 'react-hook-form';
 
 export const Login = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
-
-  // At the top of your login.jsx
 const onSubmit = async (data) => {
   try {
       const response = await fetch('/login', {
@@ -40,7 +38,6 @@ const onSubmit = async (data) => {
         <div className="col-md-6">
           <div className="card">
             <div className="card-body">
-              {/* Login header moved above the logo */}
               <h3 className="card-title text-center mb-3">Login</h3>
               <div className="text-center mb-4">
                 <img src="/assets/Logo_2.png" alt="Logo" className="img-fluid logo" />

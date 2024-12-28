@@ -138,6 +138,10 @@ app.post("/login", express.json(), async (req, res) => {
             email: user.email,
             userType: user.UserType
         };
+        let redirectPath = '/play'; // Default path for regular users
+        if (user.UserType === 'admin') {
+            redirectPath = '/dashboard'; // Redirect admins to dashboard
+        }
         res.json({ 
             success: true, 
             message: "Login successful",
