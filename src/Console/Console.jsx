@@ -99,16 +99,18 @@ export function Console() {
 
     return (
         <>
-            <div className="consoleTextContainer">
-                {consoleText.map((item,index) => (
-                    <div key={index}>{item}</div>
-                ))
-                }
+            <link rel={"stylesheet"} href={"./src/Console/ConsoleStyling.css"} />
+            <div className="wholeConsole">
+                <div className="consoleTextContainer">
+                    {consoleText.map((item, index) => (
+                        <div key={index}>{item}</div>
+                    ))}
+                </div>
+                <div className="textBoxcontainer">
+                    <input type="text" id="console_input_box" ref={inputRef} onKeyDown={handleEnterKeyDown}/>
+                    <button onClick={new_console_input} type="button" id="enter_button">Enter</button>
+                </div>
             </div>
-
-            <input type="text" id="console_input_box" ref={inputRef} onKeyDown={handleEnterKeyDown}/>
-                <button onClick={new_console_input} type="button" id="enter_button">Enter</button>
-
         </>
     )
 }
