@@ -67,13 +67,12 @@ async function save() {
 save();
 // authenticated function. checks whether you are authenticated or not
 function ensureAuthenticated(req, res, next) {
-    if (req.isAuthenticated()) {
-        // If the user is authenticated, proceed to the next function (e.g., route handler)
+    if (req.session && req.session.user) {
+        // User is authenticated
         return next();
-    } else {
-        // If not authenticated, redirect to the login page
-        return res.redirect('/login');  // Redirects to the login page
     }
+    // User is not authenticated
+    res.redirect('/login');
 }
 // basic functions
 app.get("/login", async (req, res) => {
@@ -151,13 +150,13 @@ app.post("/login", express.json(), async (req, res) => {
 });
 
 // logout route
-app.post('/logout', (req, res) => {
+app.post('/logout', ensureAuthenticated, (req, res) => {
     req.session.destroy((err) => {
         if (err) {
             return res.status(500).json({ message: 'Logout failed' });
         }
-        res.clearCookie('connect.sid');  // Clear the session cookie
-        res.redirect('/login');
+        res.clearCookie('connect.sid');
+        res.json({ success: true, message: 'Logged out successfully' });
     });
 });
 
@@ -196,7 +195,7 @@ app.get("/play", ensureAuthenticated,async (req, res) => {
 })
 
 // My Stats page route.
-app.get("/my-stats", async (req, res) => {
+app.get("/my-stats", ensureAuthenticated,async (req, res) => {
     try{
         console.log("My Stats")
 
@@ -281,6 +280,15 @@ app.use('*', async (req, res) => {
     } catch (error) {
         res.status(500).end(error);
     }
+});
+
+// Add this after all your routes
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({
+        success: false,
+        message: 'Internal server error'
+    });
 });
 
 app.listen(4173, () => {
