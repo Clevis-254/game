@@ -1,13 +1,14 @@
-import React from 'react'
-import { useState, useRef } from 'react'
+import {useState, useRef} from 'react'
 
+// NOTE : No game logic should be in this module.
+// Accessibility logic is fine (e.g rewind to last dialogue)
 
 // TODO : Make all API calls include the users ID when users are implemented
 export function Console() {
 
     // TODO : If we are expected to actually deploy this then pull this from a file /
     //  dynamically find the base url
-    // This base url for some reason is needed sometimes under contexts that 
+    // This base url for some reason is needed sometimes under contexts that
     // make no sense and probably will be needed in full deployment
     const BASEURL = "http://localhost:4173"
     const inputRef = useRef(null);
@@ -15,7 +16,6 @@ export function Console() {
     const handleEnterKeyDown = (event) => {
         if (event.key === 'Enter') {
             new_console_input()
-            console.log("eifhseofusdhfousdfhs")
         }
     };
 
@@ -50,6 +50,8 @@ export function Console() {
         }
     }
 
+    // TODO : GET CONSOLE RESPONSE FROM THIS WHEN THE GAME ACTUALLY IS MADE
+    //  (as in if we pick left then the response is what is left)
     // POST to db the new message
     function post_new_input(message) {
         fetch('/post_console_history', {
@@ -91,7 +93,6 @@ export function Console() {
     }
 
     if(historyLoaded === false){
-        console.log("errmmrmrmm m what hte sigma")
         fetchConsoleHistory()
         setHistoryLoaded(true)
     }

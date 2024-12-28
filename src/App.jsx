@@ -1,17 +1,19 @@
 import React from "react"
 import { Banner } from "./Banner"
 import { Play } from "./Play"
-import { Console } from "./Console/Console.jsx"
+import { Routes, Route } from "react-router-dom"
+import UserStats from "./UserStats.jsx";
+import MyStats from "./MyStats.jsx";
+
+
 
 const App = () => {
-    
     return (
-        <>
-            <Banner/>
-            <Play/>
-            <Console/>
-            
-        </>
+        <Routes>
+            <Route path="/play" element={<Play />} />
+            <Route path="/my-stats" element={<MyStats />} />
+            <Route path="/user-stats" element={<UserStats />} />
+        </Routes>
     )
 }
 

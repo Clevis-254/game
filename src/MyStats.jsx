@@ -1,5 +1,5 @@
 import React from 'react';
-import { Banner } from "./src/Banner";
+import { Banner } from "./Banner.jsx";
 
 export function MyStats(){
     return(
