@@ -24,13 +24,15 @@ const vite = await createServer({
     appType: 'custom',
 });
 // creating authentication session
+// Update your session configuration
 app.use(session({
-    secret: 'c5afbf2a6d07b53a8ac4f3ac154d2138bf4a89a39037d8caf47db0ed6d8469e08b94644a1c9d47852fe7ac9939bbaec7c8c7a23113c8a824cd27b6e0912b7804', // secret key
-    resave: false,  // Do not save the session if it hasn't changed
-    saveUninitialized: false,  // Do not create a session until something is stored
+    secret: 'c5afbf2a6d07b53a8ac4f3ac154d2138bf4a89a39037d8caf47db0ed6d8469e08b94644a1c9d47852fe7ac9939bbaec7c8c7a23113c8a824cd27b6e0912b7804',
+    resave: false,
+    saveUninitialized: false,
     cookie: {
-        maxAge: 1000 * 60 * 60 * 24,  // 1 day cookie lifetime
-        secure: true  // Set to true if you're using HTTPS
+        maxAge: 1000 * 60 * 60 * 24,  // 1 day
+        secure: false,  // Changed to false for development
+        httpOnly: true
     }
 }));
 // MongoDB Linking Test Code
@@ -105,15 +107,13 @@ app.get("/login", async (req, res) => {
 })
 
 // post route 
-// Add this to your Express server file
 app.post("/login", express.json(), async (req, res) => {
     try {
-        const { username , password } = req.body
-        // checking if the data shipped to the server
+        const { username, password } = req.body;
         console.log("Received login data:", req.body);
-        // checking if the user exists in the database
+        
         const user = await User.findOne({email: username});
-// if the user does not exist, it should display the message that the cridentials are invalid
+
         if(!user){
             console.log("does not exist");
             return res.status(401).json({
@@ -123,7 +123,7 @@ app.post("/login", express.json(), async (req, res) => {
         }
         
         // compare the password inserted with the ones in the database if the email is correct
-        const isMatch = await compare(password, user.password);
+        const isMatch = await user.comparePassword(password);
 
         if(!isMatch){
             console.log("wrong password");
@@ -132,20 +132,28 @@ app.post("/login", express.json(), async (req, res) => {
                 message: "invalid credentials"
             }); 
         }
+
         // assigning sessions to the user while allowing them to login 
         req.session.user = {
             id: user._id,
             email: user.email,
             userType: user.UserType
         };
-        let redirectPath = '/play'; // Default path for regular users
-        if (user.UserType === 'admin') {
-            redirectPath = '/dashboard'; // Redirect admins to dashboard
-        }
+
+        const redirectPath = user.UserType === 'admin' ? '/dashboard' : '/play';
+
+        // Make sure to await the session save
+        await new Promise((resolve, reject) => {
+            req.session.save((err) => {
+                if (err) reject(err);
+                resolve();
+            });
+        });
+
         res.json({ 
             success: true, 
             message: "Login successful",
-            redirect: '/play' // Frontend will use this to redirect
+            redirect: redirectPath
         });
     } catch (error) {
         console.error('Error processing login:', error);
