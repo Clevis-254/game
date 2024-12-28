@@ -6,9 +6,10 @@ import testMongoSchema from "./models/mongoosetest.js";
 import ReactDOMServer from 'react-dom/server';
 import React from 'react';
 import session from 'express-session';
-import bcrypt from 'bcrypt';
+import bcrypt, { compare } from 'bcrypt';
 //importing the user schema 
 import User from './data.js';
+
 
 //importing express into the server
 const app = express();
@@ -47,15 +48,13 @@ try {
 async function save() {
     try {
         const user = await User.create({
-            FirstName: "Clevis",
-            LastName: "Gikenyi",
+            Name: "Gikenyi",
             email: "s@email.com",
             Password: "1234"
         });
         console.log(user);
         const admin = await User.create({
-            FirstName: "Admin",
-            LastName: "User",
+            Name: "User",
             email: "admin@email.com",
             Password: "admin1234",
             UserType: "admin"
@@ -110,9 +109,41 @@ app.get("/login", async (req, res) => {
 // Add this to your Express server file
 app.post("/login", express.json(), async (req, res) => {
     try {
+        const { username , password } = req.body
+        // checking if the data shipped to the server
         console.log("Received login data:", req.body);
-        // Here you'll eventually handle the login logic
-        res.json({ success: true, message: "Login data received" });
+        // checking if the user exists in the database
+        const user = await User.findOne({email: username});
+// if the user does not exist, it should display the message that the cridentials are invalid
+        if(!user){
+            console.log("does not exist");
+            return res.status(401).json({
+                success: false,
+                message: "invalid credentials"
+            });
+        }
+        
+        // compare the password inserted with the ones in the database if the email is correct
+        const isMatch = await compare(password, user.password);
+
+        if(!isMatch){
+            console.log("wrong password");
+            return res.status(401).json({
+                success: false,
+                message: "invalid credentials"
+            }); 
+        }
+        // assigning sessions to the user while allowing them to login 
+        req.session.user = {
+            id: user._id,
+            email: user.email,
+            userType: user.UserType
+        };
+        res.json({ 
+            success: true, 
+            message: "Login successful",
+            redirect: '/play' // Frontend will use this to redirect
+        });
     } catch (error) {
         console.error('Error processing login:', error);
         res.status(500).json({ success: false, message: "Internal server error" });
@@ -131,7 +162,7 @@ app.post('/logout', (req, res) => {
 });
 
 // Play page route.
-app.get("/play", async (req, res) => {
+app.get("/play", ensureAuthenticated,async (req, res) => {
     try{
         console.log("Play")
 
@@ -199,7 +230,7 @@ app.get("/my-stats", async (req, res) => {
 })
 
 // User Stats page route.
-app.get("/user-stats", async (req, res) => {
+app.get("/user-stats", ensureAuthenticated,async (req, res) => {
     try {
         console.log("User Stats");
 
@@ -255,3 +286,4 @@ app.use('*', async (req, res) => {
 app.listen(4173, () => {
     console.log('http://localhost:4173.');
 });
+

@@ -1,12 +1,7 @@
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
-    FirstName: {
-        type: String,
-        required: true,
-        lowercase: true,
-    },
-    LastName: {
+    Name: {
         type: String,
         required: true,
         lowercase: true,
