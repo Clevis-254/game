@@ -1,11 +1,18 @@
 import { hydrateRoot } from 'react-dom/client';
 
-import App from './app';
+import { BrowserRouter } from 'react-router-dom';
 
-let data;
+import App from './App.jsx';
 
-if (typeof window !== 'undefined') {
-    data = window.__data__;
-    }
+// let data;
+//
+// if (typeof window !== 'undefined') {
+//     data = window.__data__;
+//     }
 
-hydrateRoot(document.getElementById('app'), <App data={data} />);
+
+hydrateRoot(
+    document.getElementById('app'),
+    <BrowserRouter>
+        <App />
+    </BrowserRouter>);
