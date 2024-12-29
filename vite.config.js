@@ -6,8 +6,9 @@ export default defineConfig({
     plugins: [react()],
     resolve: {
         alias: {
-            'react-router-dom': 'node_modules/react-router-dom',
-        },
+            '@': path.resolve(__dirname, './src'),
+            'react-router-dom': path.resolve(__dirname, 'node_modules/react-router-dom')
+        }
     },
     ssr: {
         noExternal: ["react-router-dom", "react-router"],
@@ -23,10 +24,5 @@ export default defineConfig({
         ssr: true,
         outDir: "dist-ssr",
     },
-    appType: 'custom',
-    resolve: {
-        alias: {
-            '@': path.resolve(__dirname, './src')
-        }
-    }
+    appType: 'custom'
 });
