@@ -43,10 +43,25 @@ export function Console() {
         if (console_input_text === "clear"){
             setConsoleText([...consoleText, ("Console : Clearing Console now...")])
             clear_console_history()
-        } else {
+        } else if (console_input_text === "start game"){
+            setConsoleText([...consoleText, ("Console : Starting game now...")])
+            // TODO : Continually update this as new commands arise
+        } else if (console_input_text === "help"){
+            const outputList = ["Console : Here is a list of all current commands",
+                "- 'start game' : Starts the game from the last saved point",
+                "- 'clear' : Clear the console history (does not affect the game)"]
+            for (let i in outputList){
+                console.log(outputList[i])
+                setConsoleText([...consoleText, outputList[i]])
+                post_new_input(outputList[i])
+            }
+            fetchConsoleHistory()
+
+        }
+        else {
+            setConsoleText([...consoleText, ("User : " + console_input_text)])
             post_new_input(console_input_text)
             fetchConsoleHistory()
-            setConsoleText([...consoleText, ("User : " + console_input_text)])
         }
     }
 
