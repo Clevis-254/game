@@ -4,7 +4,7 @@ import {useState, useRef} from 'react'
 // Accessibility logic is fine (e.g rewind to last dialogue)
 
 // TODO : Make all API calls include the users ID when users are implemented
-export function Console() {
+export function Console({setGameStarted}) {
 
     // TODO : If we are expected to actually deploy this then pull this from a file /
     //  dynamically find the base url
@@ -44,14 +44,21 @@ export function Console() {
             setConsoleText([...consoleText, ("Console : Clearing Console now...")])
             clear_console_history()
         } else if (console_input_text === "start game"){
-            setConsoleText([...consoleText, ("Console : Starting game now...")])
-            // TODO : Continually update this as new commands arise
+            printUserInput()
+            const consoleResponse = "Console : Starting game now..."
+            setConsoleText([...consoleText, consoleResponse])
+            setGameStarted(true)
+            post_new_input(consoleResponse)
+
+
+
+            // TODO : VV Continually update this as new commands arise VV
         } else if (console_input_text === "help"){
+            printUserInput()
             const outputList = ["Console : Here is a list of all current commands",
                 "- 'start game' : Starts the game from the last saved point",
                 "- 'clear' : Clear the console history (does not affect the game)"]
             for (let i in outputList){
-                console.log(outputList[i])
                 setConsoleText([...consoleText, outputList[i]])
                 post_new_input(outputList[i])
             }
@@ -59,6 +66,11 @@ export function Console() {
 
         }
         else {
+            printUserInput()
+        }
+
+        // Print the user input to console
+        function printUserInput(){
             setConsoleText([...consoleText, ("User : " + console_input_text)])
             post_new_input(console_input_text)
             fetchConsoleHistory()
