@@ -2,9 +2,8 @@ import fs from 'fs';
 import express from 'express';
 import mongoose from 'mongoose'
 import { createServer } from 'vite';
-import testMongoSchema from "./models/mongoosetest.js";
-import ReactDOMServer from 'react-dom/server';
-import React from 'react';
+import consoleLogHistorySchema from "./models/consoleLogHistory.js";
+import bodyParser from "body-parser";
 import session from 'express-session';
 import bcrypt, { compare } from 'bcrypt';
 //importing the user schema 
@@ -13,6 +12,20 @@ import User from './data.js';
 
 //importing express into the server
 const app = express();
+
+app.use(bodyParser.json())
+app.use(
+    bodyParser.urlencoded({
+        extended: true,
+    }),
+);
+
+app.use(bodyParser.json())
+app.use(
+    bodyParser.urlencoded({
+        extended: true,
+    }),
+);
 
 //  middleware configurations
 app.use(express.json());
@@ -174,102 +187,54 @@ app.post('/logout', ensureAuthenticated, (req, res) => {
 
 // Play page route.
 app.get("/play", ensureAuthenticated,async (req, res) => {
+    console.log("GET /play called")
     try{
-        console.log("Play")
-
-        // Dynamically load the React component using Vite
-        const module = await vite.ssrLoadModule('src/app.jsx');
-        const Play = module.default;
-
-        // Render the React component to a string
-        const html = ReactDOMServer.renderToString(React.createElement(Play));
-
-        // Get the template (index.html)
-        const template = await vite.transformIndexHtml(req.originalUrl, fs.readFileSync('index.html', 'utf-8'));
-
-        // Fetch any necessary server data
-        const { getServerData } = await vite.ssrLoadModule('/src/function.js');
-        const data = await getServerData();
-
-        // Inject the script with server-side data
-        const script = `<script>window.__data__=${JSON.stringify(data)}</script>`;
-
-        // Combine the rendered HTML, the data, and the template
-        const fullHtml = template.replace(`<!--outlet-->`, `${html} ${script}`);
-
-        // Send the final HTML to the client
-        res.status(200).set({ 'Content-Type': 'text/html' }).end(fullHtml);
+        const url = req.originalUrl;
+        const template = await vite.transformIndexHtml(url, fs.readFileSync('index.html', 'utf-8'));
+        // Render React on the server side
+        const { render } = await vite.ssrLoadModule('/src/entry-server.jsx');
+        // Put the rendered React into the index file, then React is rendered on the client side when it
+        const html = template.replace(`<!--outlet-->`, `${render(url)}`);
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
 
     } catch (error) {
-        console.error('Error rendering Play:', error);
+        console.error(`Error on GET /play : ${error.message}`);
         res.status(500).send('Internal Server Error');
     }
 })
 
 // My Stats page route.
 app.get("/my-stats", ensureAuthenticated,async (req, res) => {
+    console.log("GET /my-stats called")
     try{
-        console.log("My Stats")
-
-        // Dynamically load the React component using Vite
-        const module = await vite.ssrLoadModule('src/MyStats.jsx');
-        const MyStats = module.default;
-
-        // Render the React component to a string
-        const html = ReactDOMServer.renderToString(React.createElement(MyStats));
-
-        // Get the template (index.html)
-        const template = await vite.transformIndexHtml(req.originalUrl, fs.readFileSync('index.html', 'utf-8'));
-
-        // Fetch any necessary server data
-        const { getServerData } = await vite.ssrLoadModule('/src/function.js');
-        const data = await getServerData();
-
-        // Inject the script with server-side data
-        const script = `<script>window.__data__=${JSON.stringify(data)}</script>`;
-
-        // Combine the rendered HTML, the data, and the template
-        const fullHtml = template.replace(`<!--outlet-->`, `${html} ${script}`);
-
-        // Send the final HTML to the client
-        res.status(200).set({ 'Content-Type': 'text/html' }).end(fullHtml);
+        const url = req.originalUrl;
+        const template = await vite.transformIndexHtml(url, fs.readFileSync('index.html', 'utf-8'));
+        // Render React on the server side
+        const { render } = await vite.ssrLoadModule('/src/entry-server.jsx');
+        // Put the rendered React into the index file, then React is rendered on the client side when it
+        const html = template.replace(`<!--outlet-->`, `${render(url)}`);
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
 
     } catch (error) {
-        console.error('Error rendering MyStats:', error);
+        console.error(`Error on GET /my-stats : ${error.message}`);
         res.status(500).send('Internal Server Error');
     }
 })
 
 // User Stats page route.
 app.get("/user-stats", ensureAuthenticated,async (req, res) => {
-    try {
-        console.log("User Stats");
-
-        // Dynamically load the React component using Vite
-        const module = await vite.ssrLoadModule('src/UserStats.jsx');
-        const UserStats = module.default;
-
-        // Render the React component to a string
-        const html = ReactDOMServer.renderToString(React.createElement(UserStats));
-
-        // Get the template (index.html)
-        const template = await vite.transformIndexHtml(req.originalUrl, fs.readFileSync('index.html', 'utf-8'));
-
-        // Fetch any necessary server data
-        const { getServerData } = await vite.ssrLoadModule('/src/function.js');
-        const data = await getServerData();
-
-        // Inject the script with server-side data
-        const script = `<script>window.__data__=${JSON.stringify(data)}</script>`;
-
-        // Combine the rendered HTML, the data, and the template
-        const fullHtml = template.replace(`<!--outlet-->`, `${html} ${script}`);
-
-        // Send the final HTML to the client
-        res.status(200).set({ 'Content-Type': 'text/html' }).end(fullHtml);
+    console.log("GET /user-stats called");
+    try{
+        const url = req.originalUrl;
+        const template = await vite.transformIndexHtml(url, fs.readFileSync('index.html', 'utf-8'));
+        // Render React on the server side
+        const { render } = await vite.ssrLoadModule('/src/entry-server.jsx');
+        // Put the rendered React into the index file, then React is rendered on the client side when it
+        const html = template.replace(`<!--outlet-->`, `${render(url)}`);
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
 
     } catch (error) {
-        console.error('Error rendering UserStats:', error);
+        console.error(`Error on GET /user-stats : ${error.message}`);
         res.status(500).send('Internal Server Error');
     }
 });
@@ -277,22 +242,8 @@ app.get("/user-stats", ensureAuthenticated,async (req, res) => {
 app.use(vite.middlewares);
 
 app.use('*', async (req, res) => {
-    const url = req.originalUrl;
-
-    try {
-        const template = await vite.transformIndexHtml(url, fs.readFileSync('index.html', 'utf-8'));
-        const { render } = await vite.ssrLoadModule('/src/entry-server.jsx');
-
-        const { getServerData } = await vite.ssrLoadModule('/src/function.js');
-        const data = await getServerData();
-        const script = `<script>window.__data__=${JSON.stringify(data)}</script>`;
-
-        const html = template.replace(`<!--outlet-->`, `${render(data)} ${script}`);
-        res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
-    } catch (error) {
-        res.status(500).end(error);
-    }
-});
+    res.redirect("/my-stats")
+})
 
 // Add this after all your routes
 app.use((err, req, res, next) => {
