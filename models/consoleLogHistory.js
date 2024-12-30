@@ -10,7 +10,7 @@ const _consoleLogHistory = new mongoose.Schema(
         }
     ],
     UserID : Number
-}, {_id: false}
+}
 );
 // UserID is to link the chat history to the appropriate user
 // Message ID is simply for indexing in order.

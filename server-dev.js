@@ -20,13 +20,6 @@ app.use(
     }),
 );
 
-app.use(bodyParser.json())
-app.use(
-    bodyParser.urlencoded({
-        extended: true,
-    }),
-);
-
 //  middleware configurations
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -49,7 +42,7 @@ app.use(session({
     }
 }));
 // MongoDB Linking Test Code
-const dbURI = "mongodb://localhost:27017/testDB";
+const dbURI = "mongodb://localhost:27017/projectDatabase";
 
 // Updated MongoDB connection using async/await
 try {
@@ -59,7 +52,19 @@ try {
 } catch (error) {
     console.error("Error connecting to MongoDB:", error);
 }
+// TODO : TEMP CODE AS OUR DB IS CURRENTLY ENTIRELY LOCAL TO MAKE SURE THAT A SINGLE DEFAULT USERID IS ADDED TO THE MESSAGE SYSTEM
+async function firstConsoleUser(){
+    try {
+        const exists = await consoleLogHistorySchema.exists({ UserID: 0 });
+        if(!exists){
+            const newFirstUser = await consoleLogHistorySchema.create({UserID: 0, Messages: []})
 
+        }
+    } catch (error) {
+        console.log(`Error creating first user : ${error.message}`)
+    }
+}
+firstConsoleUser()
 // user samples 
 async function save() {
     try {
