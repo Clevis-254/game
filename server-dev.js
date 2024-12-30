@@ -65,6 +65,7 @@ async function firstConsoleUser(){
     }
 }
 firstConsoleUser()
+
 // user samples 
 async function save() {
     try {
@@ -86,6 +87,7 @@ async function save() {
     }
 }
 save();
+
 // authenticated function. checks whether you are authenticated or not
 function ensureAuthenticated(req, res, next) {
     if (req.session && req.session.user) {
@@ -95,6 +97,7 @@ function ensureAuthenticated(req, res, next) {
     // User is not authenticated
     res.redirect('/login');
 }
+
 // basic functions
 app.get("/login", async (req, res) => {
     try {
