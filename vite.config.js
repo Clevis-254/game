@@ -1,12 +1,14 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import path from 'path';
 
 export default defineConfig({
     plugins: [react()],
     resolve: {
         alias: {
-            'react-router-dom': 'node_modules/react-router-dom',
-        },
+            '@': path.resolve(__dirname, './src'),
+            'react-router-dom': path.resolve(__dirname, 'node_modules/react-router-dom')
+        }
     },
     ssr: {
         noExternal: ["react-router-dom", "react-router"],
@@ -14,7 +16,7 @@ export default defineConfig({
     optimizeDeps: {
         include: ["react-router-dom"],
     },
-    root: process.cwd(), // Set project root correctly
+    root: process.cwd(),
     server: {
         middlewareMode: true,
     },
@@ -22,5 +24,5 @@ export default defineConfig({
         ssr: true,
         outDir: "dist-ssr",
     },
-    appType: 'custom',
+    appType: 'custom'
 });
