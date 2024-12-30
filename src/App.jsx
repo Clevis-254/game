@@ -4,6 +4,7 @@ import { Play } from "./Play"
 import { Routes, Route } from "react-router-dom"
 import UserStats from "./UserStats.jsx";
 import MyStats from "./MyStats.jsx";
+import Login from "@/Login/login.jsx";
 
 
 
@@ -13,6 +14,7 @@ const App = () => {
             <Route path="/play" element={<Play />} />
             <Route path="/my-stats" element={<MyStats />} />
             <Route path="/user-stats" element={<UserStats />} />
+            <Route path="/login" element={<Login />} />
         </Routes>
     )
 }
