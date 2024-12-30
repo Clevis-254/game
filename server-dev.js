@@ -7,7 +7,7 @@ import bodyParser from "body-parser";
 import session from 'express-session';
 import bcrypt, { compare } from 'bcrypt';
 //importing the user schema 
-import User from './data.js';
+import User from './models/UserSchema.js';
 
 
 //importing express into the server
