@@ -21,9 +21,6 @@ const vite = await createServer({
     appType: 'custom',
 });
 
-// TODO : Find a better solution that is less code repetitive for react code rendering
-//  (can't put in a function or else vite throws a fit), but also this is a short project so maybe not
-
 /* TODO : Eventually run any mongoDB linking on an actual external server we connect to instead of just running localhost
      although that might be out the scope of this project */
 
@@ -87,46 +84,13 @@ app.post("/post_clear_console", async (req, res) => {
 
 })
 
-// Play page route.
-app.get("/play", async (req, res) => {
-    console.log("GET /play called")
+app.use(vite.middlewares);
+
+// This will render all pages React code. The routing specific to the page is in the App.jsx file.
+app.get("*", async (req, res) => {
+    console.log(`Generic GET called with the url :  ${req.originalUrl}`)
     try{
-        const url = req.originalUrl;
-        const template = await vite.transformIndexHtml(url, fs.readFileSync('index.html', 'utf-8'));
-        // Render React on the server side
-        const { render } = await vite.ssrLoadModule('/src/entry-server.jsx');
-        // Put the rendered React into the index file, then React is rendered on the client side when it
-        const html = template.replace(`<!--outlet-->`, `${render(url)}`);
-        res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
-
-    } catch (error) {
-        console.error(`Error on GET /play : ${error.message}`);
-        res.status(500).send('Internal Server Error');
-    }
-})
-
-// My Stats page route.
-app.get("/my-stats", async (req, res) => {
-    console.log("GET /my-stats called")
-    try{
-        const url = req.originalUrl;
-        const template = await vite.transformIndexHtml(url, fs.readFileSync('index.html', 'utf-8'));
-        // Render React on the server side
-        const { render } = await vite.ssrLoadModule('/src/entry-server.jsx');
-        // Put the rendered React into the index file, then React is rendered on the client side when it
-        const html = template.replace(`<!--outlet-->`, `${render(url)}`);
-        res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
-
-    } catch (error) {
-        console.error(`Error on GET /my-stats : ${error.message}`);
-        res.status(500).send('Internal Server Error');
-    }
-})
-
-// User Stats page route.
-app.get("/user-stats", async (req, res) => {
-    console.log("GET /user-stats called");
-    try{
+        // TODO : AXE THIS BELOW LINE AND IN render function use REQ.ORIGINALURL
         const url = req.originalUrl;
         const template = await vite.transformIndexHtml(url, fs.readFileSync('index.html', 'utf-8'));
         // Render React on the server side
@@ -139,12 +103,6 @@ app.get("/user-stats", async (req, res) => {
         console.error(`Error on GET /user-stats : ${error.message}`);
         res.status(500).send('Internal Server Error');
     }
-});
-
-app.use(vite.middlewares);
-
-app.use('*', async (req, res) => {
-    res.redirect("/my-stats")
 })
 
 app.listen(4173, () => {
