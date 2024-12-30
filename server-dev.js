@@ -185,6 +185,62 @@ app.post('/logout', ensureAuthenticated, (req, res) => {
     });
 });
 
+app.get("/get_console_history", async (req, res) => {
+    console.log("GET /get_console_history called")
+    try {
+        // TODO : integrate with the login system to get the correct userID
+        const consoleHistory = await consoleLogHistorySchema.find({"UserID" : 0})
+        res.json(consoleHistory)
+
+    } catch (error) {
+        console.error('Error getting console history:', error);
+        res.status(500).send('Internal Server Error');
+    }
+})
+
+// Route for posting a new console message to the database
+app.post("/post_console_history", async (req, res) => {
+    console.log ("POST /post_console_history called")
+    try {
+        const { MessageID, Message, Speaker } = req.body
+
+        // TODO : integrate with the login system to get the correct userID
+        const updatedDocument = await consoleLogHistorySchema.findOneAndUpdate(
+            {"UserID" : 0},
+            { $push : { Messages : { MessageID, Message, Speaker} } }
+        )
+        if (!updatedDocument) {
+            return res.status(404).send('Document not found');
+        }
+        return res.status(200).send("Request to post new message to DB successful")
+    } catch (error) {
+        console.error('Error posting to console history : ', error);
+        res.status(500).send('Internal Server Error');
+    }
+})
+
+
+// POST route for deleting all console history
+app.post("/post_clear_console", async (req, res) => {
+    console.log("POST /post_clear_console called")
+    try {
+        // TODO : integrate with the login system to get the correct userID
+        const updatedDocument = await consoleLogHistorySchema.findOneAndUpdate(
+            {"UserID" : 0},
+            { $set : { Messages : [] } }
+        )
+        if (!updatedDocument) {
+            return res.status(404).send('Document not found');
+        }
+        return res.status(200).send("Request to clear messages sent to DB successfully")
+    } catch (error) {
+        console.error('Error posting to clear console history : ', error);
+        res.status(500).send('Internal Server Error');
+    }
+
+})
+
+
 // Play page route.
 app.get("/play", ensureAuthenticated,async (req, res) => {
     console.log("GET /play called")
