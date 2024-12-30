@@ -58,7 +58,6 @@ async function firstConsoleUser(){
         const exists = await consoleLogHistorySchema.exists({ UserID: 0 });
         if(!exists){
             const newFirstUser = await consoleLogHistorySchema.create({UserID: 0, Messages: []})
-
         }
     } catch (error) {
         console.log(`Error creating first user : ${error.message}`)
@@ -74,14 +73,12 @@ async function save() {
             email: "s@email.com",
             Password: "1234"
         });
-        console.log(user);
         const admin = await User.create({
             Name: "User",
             email: "admin@email.com",
             Password: "admin1234",
             UserType: "admin"
         });
-        console.log(admin)
     } catch (error) {
         console.error("Error creating user:", error);
     }
