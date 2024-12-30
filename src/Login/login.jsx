@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './Login.css';
+import './login.css';
 import { useForm } from 'react-hook-form';
 
 export const Login = () => {

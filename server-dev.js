@@ -54,6 +54,7 @@ const dbURI = "mongodb://localhost:27017/testDB";
 // Updated MongoDB connection using async/await
 try {
     await mongoose.connect(dbURI);
+    mongoose.set("debug", true)
     console.log("Connected to MongoDB");
 } catch (error) {
     console.error("Error connecting to MongoDB:", error);
@@ -95,7 +96,7 @@ app.get("/login", async (req, res) => {
         console.log("logging in")
 
         // Load the server entry point for login
-        const { render } = await vite.ssrLoadModule('src/entry-server-login.jsx');
+        const { render } = await vite.ssrLoadModule('src/entry-server.jsx');
         
         // Render the component
         const appHtml = render();
@@ -104,12 +105,7 @@ app.get("/login", async (req, res) => {
         let template = await vite.transformIndexHtml(req.originalUrl, fs.readFileSync('index.html', 'utf-8'));
         
         // Insert the rendered app and the client script tag
-        const html = template
-            .replace('<!--outlet-->', appHtml)
-            .replace(
-                '</body>',
-                `<script type="module" src="/src/entry-client-login.jsx"></script></body>`
-            );
+        const html = template.replace(`<!--outlet-->`, `${render(req.originalUrl)}`);
 
         res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
 
