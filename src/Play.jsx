@@ -1,21 +1,28 @@
 import { Console } from "./Console/Console.jsx"
 import Banner from "./Banner.jsx";
 import GameLogic from "./Game/GameLogic.jsx";
-import { useState }from "react"
+import {forwardRef, useRef, useState} from "react"
 
 export function Play(){
 
     const [gameStarted, setGameStarted] = useState(false)
 
-    console.log(`gameStarted : ${gameStarted}`)
-    // tells me in console that its a string
-    console.log(`gameStarted type : ${typeof gameStarted}`)
+    const consoleRef = useRef()
+
+    function postGameLogicToConsole (message, speaker) {
+        if (consoleRef.current){
+            // IDE error as current is defined at runtime, so it does run as intended.
+            consoleRef.current.callPostToConsole(message, speaker)
+        }
+    }
+
     return (
         <>
         <h1>Play</h1>
             <Banner />
-            <Console setGameStarted={setGameStarted} />
-            <GameLogic gameStarted={gameStarted} setGameStarted={setGameStarted}/>
+            <Console ref={consoleRef} setGameStarted={setGameStarted} />
+            <GameLogic gameStarted={gameStarted} setGameStarted={setGameStarted}
+                       postTextToConsole={postGameLogicToConsole}/>
         </>
     )
 }

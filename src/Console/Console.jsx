@@ -1,11 +1,21 @@
-import {useState, useRef} from 'react'
+import {useState, useRef, useEffect, forwardRef, useImperativeHandle} from 'react'
 
 // NOTE : No game logic should be in this module.
 // Accessibility logic is fine (e.g rewind to last dialogue)
+// DESIGN NOTE : We fetch the entire console history every time we reload because this is a small game with few
+// users. If we were to scale up then it would be worth doing.
 
 // TODO : Make all API calls include the users ID when users are implemented
-export function Console({setGameStarted}) {
+export const Console = forwardRef(function Console({setGameStarted}, ref) {
 
+    // This allows us to externally add messages to the console.
+    useImperativeHandle(ref,() => {
+        return {
+        callPostToConsole: (message, speaker) => {
+            post_new_input(message,speaker)
+        }
+        }
+    })
     // TODO : If we are expected to actually deploy this then pull this from a file /
     //  dynamically find the base url
     // This base url for some reason is needed sometimes under contexts that
@@ -22,6 +32,7 @@ export function Console({setGameStarted}) {
     // State Var holding all client side console text
     const [consoleText, setConsoleText] = useState([])
 
+    // TODO : Potentially replace with useEffect (might not matter since its only changed once)
     // Used to check if the history has been loaded yet upon first visit
     const [historyLoaded, setHistoryLoaded] = useState(false)
 
@@ -45,26 +56,22 @@ export function Console({setGameStarted}) {
             clear_console_history()
         } else if (console_input_text === "start game"){
             printUserInput()
-            const consoleResponse = "Console : Starting game now..."
-            setConsoleText([...consoleText, consoleResponse])
+            const consoleResponse = "Starting game now..."
+            setConsoleText([...consoleText, `Console : ${consoleResponse}`])
             setGameStarted(true)
-            post_new_input(consoleResponse)
-
-
-
-            // TODO : VV Continually update this as new commands arise VV
+            post_new_input(consoleResponse, "Console")
         } else if (console_input_text === "help"){
             printUserInput()
-            const outputList = ["Console : Here is a list of all current commands",
+            const outputList = ["Here is a list of all current commands",
                 "- 'start game' : Starts the game from the last saved point",
                 "- 'clear' : Clear the console history (does not affect the game)"]
             for (let i in outputList){
-                setConsoleText([...consoleText, outputList[i]])
-                post_new_input(outputList[i])
+                setConsoleText([...consoleText, `Console : ${outputList[i]}`])
+                post_new_input(outputList[i], "Console")
             }
-            fetchConsoleHistory()
-
         }
+        // Doesn't match any commands
+        // TODO : At this point path choosing should be implemented
         else {
             printUserInput()
         }
@@ -72,15 +79,14 @@ export function Console({setGameStarted}) {
         // Print the user input to console
         function printUserInput(){
             setConsoleText([...consoleText, ("User : " + console_input_text)])
-            post_new_input(console_input_text)
-            fetchConsoleHistory()
+            post_new_input(console_input_text, "User")
         }
     }
 
     // TODO : GET CONSOLE RESPONSE FROM THIS WHEN THE GAME ACTUALLY IS MADE
     //  (as in if we pick left then the response is what is left)
     // POST to db the new message
-    function post_new_input(message) {
+    function post_new_input(message, speaker) {
         fetch('/post_console_history', {
             method: "POST",
             headers: {
@@ -89,9 +95,10 @@ export function Console({setGameStarted}) {
             body: JSON.stringify({
                 MessageID: consoleText.length,
                 Message: message,
-                Speaker: "User"
+                Speaker: speaker
             })
         });
+        fetchConsoleHistory()
      }
 
     // POST to clear console history in the db
@@ -140,6 +147,4 @@ export function Console({setGameStarted}) {
             </div>
         </>
     )
-}
-
-export default Console;
+})
