@@ -5,7 +5,7 @@ import { Routes, Route } from "react-router-dom"
 import UserStats from "./UserStats.jsx";
 import MyStats from "./MyStats.jsx";
 import { Error404 } from "./Errors/Error404.jsx";
-
+import Login from "@/Login/login.jsx";
 
 
 const App = () => {
@@ -14,6 +14,7 @@ const App = () => {
             <Route path="/play" element={<Play />} />
             <Route path="/my-stats" element={<MyStats />} />
             <Route path="/user-stats" element={<UserStats />} />
+            <Route path="/login" element={<Login />} />
             <Route path="*" element={<Error404 />} />
         </Routes>
     )
