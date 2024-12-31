@@ -9,7 +9,7 @@ export function UserStats() {
             <hr/>
             <br/>
 
-            <div className="container">
+            <div className="statsContainer">
                 <div className="statSection1">
                     <h2 className="text-uppercase">Number of Players</h2>
                     <h4>1</h4>
@@ -21,7 +21,7 @@ export function UserStats() {
                 </div>
             </div>
 
-            <div className="container">
+            <div className="statsContainer">
                 <div className="statSection1">
                     <h2 className="text-uppercase">Time Played</h2>
                     <h4>00:00:00</h4>
@@ -33,7 +33,7 @@ export function UserStats() {
                 </div>
             </div>
 
-            <div className="container">
+            <div className="statsContainer">
                 <div className="statSection2">
                     <h2 className="text-uppercase">Audio File Play Count</h2>
                     <h4>hit: 0</h4>
@@ -52,7 +52,7 @@ export function UserStats() {
                 </div>
             </div>
 
-            <div className="container">
+            <div className="statsContainer">
                 <div className="statSectionHeatmap">
                     <h1 className="text-uppercase">Heatmap</h1>
                     <img
