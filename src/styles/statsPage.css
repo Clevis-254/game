@@ -1,4 +1,4 @@
-.container{
+.statsContainer{
     display: flex;
     justify-content: center;
     align-items: stretch;
@@ -12,9 +12,9 @@
     color: white;
     padding: 10px;
     border: 2px solid lightgray;
+    border: 2px solid lightgray;
     margin: 20px;
     text-align: center;
-    flex-grow: 2;
 }
 
 .statSection2 {
@@ -29,11 +29,10 @@
     align-items: stretch;
     text-align: center;
     align-content: center;
-    flex-grow: 2;
 }
 
 .statSectionHeatmap {
-    width: 95%;
+    width: 72%;
     float: left;
     border-radius: 25px;
     padding: 10px;
@@ -42,7 +41,6 @@
     background: #202020;
     color: white;
     text-align: center;
-    flex-grow: 2;
 }
 
 img{
