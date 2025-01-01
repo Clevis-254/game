@@ -247,10 +247,10 @@ app.post('/logout', ensureAuthenticated, async (req, res) => {
 app.get("/get_console_history", ensureAuthenticated,async (req, res) => {
     console.log("GET /get_console_history called")
     try {
-        // TODO : integrate with the login system to get the correct userID
-        const consoleHistory = await consoleLogHistorySchema.find({"UserID" : 0})
-        res.json(consoleHistory)
-
+        // console will be taking in the user's id instead
+        const userId = req.session.user.id;
+        const consoleHistory = await consoleLogHistorySchema.find({ UserID: userId });
+        res.json(consoleHistory);
     } catch (error) {
         console.error('Error getting console history:', error);
         res.status(500).send('Internal Server Error');
@@ -261,17 +261,19 @@ app.get("/get_console_history", ensureAuthenticated,async (req, res) => {
 app.post("/post_console_history",ensureAuthenticated ,async (req, res) => {
     console.log ("POST /post_console_history called")
     try {
-        const { MessageID, Message, Speaker } = req.body
+        const userId = req.session.user.id;
+        const { MessageID, Message, Speaker } = req.body;
 
-        // TODO : integrate with the login system to get the correct userID
         const updatedDocument = await consoleLogHistorySchema.findOneAndUpdate(
-            {"UserID" : 0},
-            { $push : { Messages : { MessageID, Message, Speaker} } }
-        )
+            { UserID: userId },
+            { $push: { Messages: { MessageID, Message, Speaker } } }
+        );
+        
         if (!updatedDocument) {
-            return res.status(404).send('Document not found');
+            return res.status(404).send('Console not found');
         }
-        return res.status(200).send("Request to post new message to DB successful")
+        
+        res.status(200).send("Message posted successfully");
     } catch (error) {
         console.error('Error posting to console history : ', error);
         res.status(500).send('Internal Server Error');
@@ -283,15 +285,19 @@ app.post("/post_console_history",ensureAuthenticated ,async (req, res) => {
 app.post("/post_clear_console", ensureAuthenticated,async (req, res) => {
     console.log("POST /post_clear_console called")
     try {
-        // TODO : integrate with the login system to get the correct userID
+        // using the user id instead
+        const userId = req.session.user.id;
+        
         const updatedDocument = await consoleLogHistorySchema.findOneAndUpdate(
-            {"UserID" : 0},
-            { $set : { Messages : [] } }
-        )
+            { UserID: userId },
+            { $set: { Messages: [] } }
+        );
+        
         if (!updatedDocument) {
-            return res.status(404).send('Document not found');
+            return res.status(404).send('Console not found');
         }
-        return res.status(200).send("Request to clear messages sent to DB successfully")
+        
+        res.status(200).send("Console cleared successfully");
     } catch (error) {
         console.error('Error posting to clear console history : ', error);
         res.status(500).send('Internal Server Error');
