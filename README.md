@@ -1,12 +1,32 @@
 # Group 8 CFLT
 
+Group 8's project focuses on creating a voice-controlled game designed for users with both visual and motor disabilities.
 
+## Technologies Used
+- **Express.js** - Backend
+- **React with Vite** - Frontend
+- **MongoDB** - Database
 
-## Getting started
+## Getting Started
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+To get started, ensure that you have the following installed on your machine:
+- **Node.js** - for running the necessary programs
+- **MongoDB** - for the database
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+Once the required software is installed, follow these steps:
+
+1. Open your terminal and navigate to the project directory.
+2. Run the following command to install the necessary dependencies:
+
+   ```bash
+   npm install
+3. After the installation is complete, you can start the development server by running:
+
+    ```bash
+    npm run dev
+4. Make sure MongoDB is running locally. If needed, start your MongoDB instance.
+//Todo I will right how to run when the db is a cloud db
+Once the server is running, open your browser and navigate to http://localhost:4173 to use the application.
 
 ## Add your files
 
