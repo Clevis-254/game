@@ -1,18 +1,30 @@
 import {useState, useRef, useEffect} from 'react'
 import transcripts from "../Audio/Narration/transcripts.jsx";
 
-export function GameLogic({gameStarted, setGameStarted, postTextToConsole}) {
+export function GameLogic({gameStarted, setGameStarted, postTextToConsole, transcriptRef}) {
 
-    const [audioSpeed, setAudioSpeed] = useState(1)
     const audioRef = useRef(null)
+
+    // When the page first loads, create an audio player not attached to the DOM, so it isn't visible.
+    useEffect(() => {
+        const audioPlayer = document.createElement("audio")
+        audioPlayer.src = audioSourceURL
+        audioRef.current = audioPlayer
+    }, [])
     const audioPlay = () => {
         if (audioRef.current) {
             audioRef.current.play();
+        }
+        if (transcriptRef.current) {
+            transcriptRef.current.innerHTML = "This text was updated by Child Two!";
         }
     }
     const audioPause = () => {
         if (audioRef.current) {
             audioRef.current.pause();
+        }
+        if (transcriptRef.current) {
+            transcriptRef.current.innerHTML = "";
         }
     }
     const audioSpeedUp = () => {
@@ -31,20 +43,18 @@ export function GameLogic({gameStarted, setGameStarted, postTextToConsole}) {
             audioRef.current.currentTime = Math.max(0, audioRef.current.currentTime - seconds);
         }
     }
-    
+
     const audioSourceURL = "./src/Audio/Narration/Intro.mp3"
 
     // When gameStarted is updated (from running "start game" in the console) this is run
     useEffect(() => {
         if(gameStarted === true){
-            postTextToConsole("hello", "Joe")
-            // startGame()
-            // setGameConsoleText("AHHHH WE GOT IT FROM useeffect")
+            startGame()
         }}, [gameStarted])
 
     function startGame(){
-        // console.log("stargame RAN")
-        // setGameConsoleText("Console : AHHHH WE GOT IT FROM startgame")
+        console.log("startgame RAN")
+        postTextToConsole("hello", "Joe")
     }
 
     return(
@@ -55,7 +65,6 @@ export function GameLogic({gameStarted, setGameStarted, postTextToConsole}) {
             <button onClick={audioSpeedUp}>Speed Up</button>
             <button onClick={audioSlowDown}>Slow Down</button>
             <button onClick={() => audioRewind(5)}>Reverse5s</button>
-            <audio ref={audioRef} src={audioSourceURL} controls/>
         </>
     )
 }

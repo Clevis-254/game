@@ -8,6 +8,7 @@ export function Play(){
     const [gameStarted, setGameStarted] = useState(false)
 
     const consoleRef = useRef()
+    const transcriptRef = useRef()
 
     function postGameLogicToConsole (message, speaker) {
         if (consoleRef.current){
@@ -20,8 +21,8 @@ export function Play(){
         <>
         <h1>Play</h1>
             <Banner />
-            <Console ref={consoleRef} setGameStarted={setGameStarted} />
-            <GameLogic gameStarted={gameStarted} setGameStarted={setGameStarted}
+            <Console ref={consoleRef} transcriptRef={transcriptRef} setGameStarted={setGameStarted} />
+            <GameLogic transcriptRef={transcriptRef} gameStarted={gameStarted} setGameStarted={setGameStarted}
                        postTextToConsole={postGameLogicToConsole}/>
         </>
     )
