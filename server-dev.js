@@ -6,7 +6,6 @@ import consoleLogHistorySchema from "./models/consoleLogHistory.js";
 import bodyParser from "body-parser";
 import session from 'express-session';
 import bcrypt, { compare } from 'bcrypt';
-import csrf from 'csurf';
 //importing the user schema 
 import User from './models/UserSchema.js';
 
@@ -20,7 +19,6 @@ app.use(
         extended: true,
     }),
 );
-app.use(csrf());
 
 //  middleware configurations
 app.use(express.json());
@@ -35,7 +33,6 @@ const vite = await createServer({
 // Update your session configuration
 app.use(session({
     secret: 'c5afbf2a6d07b53a8ac4f3ac154d2138bf4a89a39037d8caf47db0ed6d8469e08b94644a1c9d47852fe7ac9939bbaec7c8c7a23113c8a824cd27b6e0912b7804',
-    ///TODO change the secret key
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -179,44 +176,14 @@ app.post("/login", express.json(), async (req, res) => {
 });
 
 // logout route
-app.post('/logout', ensureAuthenticated, async (req, res) => {
-    try {
-        // Clear any authenticated user data
-        if (req.session) {
-            // Destroy the session
-            await new Promise((resolve, reject) => {
-                req.session.destroy((err) => {
-                    if (err) reject(err);
-                    resolve();
-                });
-            });
-            
-            // Clear the session cookie
-            res.clearCookie('connect.sid', {
-                path: '/',
-                httpOnly: true,
-                secure: false,// change to  this in a production server process.env.NODE_ENV === 'production',
-                sameSite: 'strict'
-            });
-            
-            res.status(200).json({ 
-                success: true,
-                message: 'Logout successful',
-                redirect: '/login'
-            });
-        } else {
-            res.status(401).json({
-                success: false,
-                message: 'No active session'
-            });
+app.post('/logout', ensureAuthenticated, (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            return res.status(500).json({ message: 'Logout failed' });
         }
-    } catch (error) {
-        console.error('Logout error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error during logout'
-        });
-    }
+        res.clearCookie('connect.sid');
+        res.json({ success: true, message: 'Logged out successfully' });
+    });
 });
 
 app.get("/get_console_history", async (req, res) => {
