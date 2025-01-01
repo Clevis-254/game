@@ -1,14 +1,15 @@
 import { Console } from "./Console/Console.jsx"
 import Banner from "./Banner.jsx";
 import GameLogic from "./Game/GameLogic.jsx";
-import {forwardRef, useRef, useState} from "react"
+import { useRef, useState } from "react"
 
 export function Play(){
 
-    const [gameStarted, setGameStarted] = useState(false)
-
     const consoleRef = useRef()
     const transcriptRef = useRef()
+
+    const [commandToGameTrigger, setCommandToGameTrigger] = useState(true)
+    const consoleToGameCommandRef = useRef("")
 
     function postGameLogicToConsole (message, speaker) {
         if (consoleRef.current){
@@ -21,9 +22,16 @@ export function Play(){
         <>
         <h1>Play</h1>
             <Banner />
-            <Console ref={consoleRef} transcriptRef={transcriptRef} setGameStarted={setGameStarted} />
-            <GameLogic transcriptRef={transcriptRef} gameStarted={gameStarted} setGameStarted={setGameStarted}
-                       postTextToConsole={postGameLogicToConsole}/>
+            <Console ref={consoleRef}
+                     transcriptRef={transcriptRef}
+                     commandToGameTrigger={commandToGameTrigger}
+                     setCommandToGameTrigger={setCommandToGameTrigger}
+                     consoleToGameCommandRef={consoleToGameCommandRef} />
+            <GameLogic transcriptRef={transcriptRef}
+                       postTextToConsole={postGameLogicToConsole}
+                       commandToGameTrigger={commandToGameTrigger}
+                       setCommandToGameTrigger={setCommandToGameTrigger}
+                       consoleToGameCommandRef={consoleToGameCommandRef}/>
         </>
     )
 }

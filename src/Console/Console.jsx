@@ -6,8 +6,11 @@ import {useState, useRef, useEffect, forwardRef, useImperativeHandle} from 'reac
 // users. If we were to scale up then it would be worth doing.
 
 // TODO : Make all API calls include the users ID when users are implemented
+// TODO : Explore not using forwardRefs as they will be depreciated in future versions and perhaps using
+//  useEffect to push custom requests similar to how you push commands from console>game
 export const Console =
-    forwardRef(function Console({setGameStarted, transcriptRef}, ref) {
+    forwardRef(function Console({transcriptRef, commandToGameTrigger,
+                                    setCommandToGameTrigger, consoleToGameCommandRef}, ref) {
 
         // This allows us to add messages to the console from external components
         useImperativeHandle(ref,() => {
@@ -67,6 +70,15 @@ export const Console =
         // Used to check if the history has been loaded yet upon first visit
         const [historyLoaded, setHistoryLoaded] = useState(false)
 
+        function commandToGame(command){
+            consoleToGameCommandRef.current = command
+            if(commandToGameTrigger === true){
+                setCommandToGameTrigger(false)
+            } else {
+                setCommandToGameTrigger(true)
+            }
+        }
+
         // Function to add a user console input client side
         function new_console_input(){
 
@@ -79,43 +91,51 @@ export const Console =
             const console_input_text = console_input_box.value
             console_input_box.value = ""
 
-            // TODO : if we add more commands replace with a switch statement
             // TODO : Functionality for choosing paths in game
-            // If the input text is a default command (not game related) then run that if not treat is as a input
-            if (console_input_text === "clear"){
-                setConsoleText([...consoleText, ("Console : Clearing Console now...")])
-                clear_console_history()
-            } else if (console_input_text === "start game"){
-                printUserInput()
-                const consoleResponse = "Starting game now..."
-                setConsoleText([...consoleText, `Console : ${consoleResponse}`])
-                setGameStarted(true)
-                post_new_input(consoleResponse, "Console")
-            } else if (console_input_text === "help"){
-                printUserInput()
-                const outputList = ["Here is a list of all current commands",
-                    "- 'start game' : Starts the game from the last saved point",
-                    "- 'clear' : Clear the console history (does not affect the game)"]
-                for (let i in outputList){
-                    setConsoleText([...consoleText, `Console : ${outputList[i]}`])
-                    post_new_input(outputList[i], "Console")
-                }
-            }
-                // Doesn't match any commands
-            // TODO : At this point path choosing should be implemented
-            else {
-                printUserInput()
+            switch (console_input_text) {
+                case "clear":
+                    setConsoleText([...consoleText, ("Console : Clearing Console now...")])
+                    clear_console_history()
+                    break
+                case "start game":
+                    printUserInput()
+                    const consoleResponse = "Starting game now..."
+                    setConsoleText([...consoleText, `Console : ${consoleResponse}`])
+                    commandToGame(console_input_text)
+                    post_new_input(consoleResponse, "Console")
+                    break
+                case "help":
+                    printUserInput()
+                    const outputList = ["Here is a list of all current commands",
+                        "- 'start game' : Starts the game from the last saved point",
+                        "- 'clear' : Clear the console history (does not affect the game)"]
+                    for (let i in outputList){
+                        setConsoleText([...consoleText, `Console : ${outputList[i]}`])
+                        post_new_input(outputList[i], "Console")
+                    }
+                    break
+                case "play":
+                case "pause":
+                case "speed up":
+                case "slow down":
+                    // TODO : make it so rewind can be "rewind x" for x seconds. Might need to pre-check or use an IF for this.
+                case "rewind":
+                    printUserInput()
+                    commandToGame(console_input_text)
+                    break
+                default:
+                    printUserInput()
+                    console.log("Console:Not on the command list")
             }
 
             // Print the user input to console
+            // TODO : Probably could remove this and just replace it with the new post_new_input method
             function printUserInput(){
                 setConsoleText([...consoleText, ("User : " + console_input_text)])
                 post_new_input(console_input_text, "User")
             }
         }
 
-        // TODO : GET CONSOLE RESPONSE FROM THIS WHEN THE GAME ACTUALLY IS MADE
-        //  (as in if we pick left then the response is what is left)
         // POST to db the new message
         function post_new_input(message, speaker) {
             fetch('/post_console_history', {

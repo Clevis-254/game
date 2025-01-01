@@ -1,8 +1,8 @@
 import {useState, useRef, useEffect} from 'react'
 import transcripts from "../Audio/Narration/transcripts.jsx";
 
-export function GameLogic({gameStarted, setGameStarted, postTextToConsole, transcriptRef}) {
-
+export function GameLogic({ postTextToConsole, transcriptRef,
+                              commandToGameTrigger, setCommandToGameTrigger, consoleToGameCommandRef}) {
     const audioRef = useRef(null)
 
     // When the page first loads, create an audio player not attached to the DOM, so it isn't visible.
@@ -39,17 +39,43 @@ export function GameLogic({gameStarted, setGameStarted, postTextToConsole, trans
 
     const audioSourceURL = "./src/Audio/Narration/Intro.mp3"
 
-    // When gameStarted is updated (from running "start game" in the console) this is run
+    // useEffect to get commands from the console to gameLogic
+    // Uses a state variable to trigger this function, then uses a ref to change the value again
+    // without re-rendering. Uses isInitialRenderConsoleToGame so it doesn't run on initial render
+    const isInitialRenderConsoleToGame = useRef(true);
     useEffect(() => {
-        if(gameStarted === true){
-            startGame()
-        }}, [gameStarted])
+        if (isInitialRenderConsoleToGame.current) {
+            isInitialRenderConsoleToGame.current = false
+            return
+        }
+        switch (consoleToGameCommandRef.current) {
+            case "start game":
+                startGame()
+                break
+            case "play":
+                audioPlay()
+                break
+            case "pause":
+                audioPause()
+                break
+            case "speed up":
+                audioSpeedUp()
+                break
+            case "slow down":
+                audioSlowDown()
+                break
+            // TODO : USE STRING PARSING TO ADD CUSTOM PARAMETERS....
+            case "rewind":
+                audioRewind(10)
+                break
+            default:
+                console.log("GameLogic:Not a command match")
+        }
+    },[commandToGameTrigger])
 
     function startGame(){
-        // postTextToConsole("hello", "Joe")
-        // Not bothering adding more audioRef assignment checks as it is always assigned
-        // and this code is likely to never be touched after completion
-        audioRef.current.play()
+        // postTextToConsole("Test", "TestSpeaker")
+        audioPlay()
         transcriptOutput("Intro")
     }
 
@@ -78,12 +104,6 @@ export function GameLogic({gameStarted, setGameStarted, postTextToConsole, trans
     }
     return(
         <>
-            <h1>{gameStarted.toString()}</h1>
-            <button onClick={audioPlay}>Play</button>
-            <button onClick={audioPause}>Pause</button>
-            <button onClick={audioSpeedUp}>Speed Up</button>
-            <button onClick={audioSlowDown}>Slow Down</button>
-            <button onClick={() => audioRewind(5)}>Reverse5s</button>
         </>
     )
 }
