@@ -170,7 +170,7 @@ export const Console =
                         {consoleText.map((item, index) => (
                             <div key={index}>{item}</div>
                         ))}
-                        <p ref={transcriptRef}>HEREUWEGFEIJFBEIG</p>
+                        <p ref={transcriptRef}></p>
                     </div>
                     <div className="textBoxcontainer">
                         <input type="text" id="console_input_box" ref={inputRef} onKeyDown={handleEnterKeyDown}/>

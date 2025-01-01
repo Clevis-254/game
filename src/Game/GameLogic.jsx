@@ -15,16 +15,10 @@ export function GameLogic({gameStarted, setGameStarted, postTextToConsole, trans
         if (audioRef.current) {
             audioRef.current.play();
         }
-        if (transcriptRef.current) {
-            transcriptRef.current.innerHTML = "This text was updated by Child Two!";
-        }
     }
     const audioPause = () => {
         if (audioRef.current) {
             audioRef.current.pause();
-        }
-        if (transcriptRef.current) {
-            transcriptRef.current.innerHTML = "";
         }
     }
     const audioSpeedUp = () => {
@@ -36,7 +30,6 @@ export function GameLogic({gameStarted, setGameStarted, postTextToConsole, trans
         if (audioRef.current) {
             audioRef.current.playbackRate = Math.max(0.5, audioRef.current.playbackRate - 0.5);
         }
-
     }
     const audioRewind = (seconds) => {
         if (audioRef.current) {
@@ -53,10 +46,36 @@ export function GameLogic({gameStarted, setGameStarted, postTextToConsole, trans
         }}, [gameStarted])
 
     function startGame(){
-        console.log("startgame RAN")
-        postTextToConsole("hello", "Joe")
+        // postTextToConsole("hello", "Joe")
+        // Not bothering adding more audioRef assignment checks as it is always assigned
+        // and this code is likely to never be touched after completion
+        audioRef.current.play()
+        transcriptOutput("Intro")
     }
 
+    async function transcriptOutput(transcriptName) {
+        // Find the desired transcript
+        let transcriptText
+        for (const [key, value] of Object.entries(transcripts)) {
+            if (key === transcriptName) {
+                transcriptText = value
+            }
+        }
+        let delayedTranscript = ""
+        for (const char of transcriptText) {
+            // ^ in the transcript = 1s delay
+            if (char === "^") {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            } else if(char === " "){
+                await new Promise(resolve => setTimeout(resolve, 0));
+                delayedTranscript += char;
+            } else {
+                await new Promise(resolve => setTimeout(resolve, 80));
+                delayedTranscript += char;
+            }
+            transcriptRef.current.innerHTML = delayedTranscript
+        }
+    }
     return(
         <>
             <h1>{gameStarted.toString()}</h1>
