@@ -175,6 +175,32 @@ app.post("/login", express.json(), async (req, res) => {
     }
 });
 
+
+// signup route
+app.post('/signup', async (req, res) => {
+    try {
+        const { name, email, password } = req.body;
+
+        // Check if the email already exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ success: false, message: 'Email already exists' });
+        }
+
+        // Create a new user
+        const user = new User({ Name: name, email, Password: password });
+        await user.save();
+
+        res.status(201).json({ success: true, redirect: '/login' });
+    } catch (error) {
+        console.error('Signup error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+
+
+
 // logout route
 app.post('/logout', ensureAuthenticated, (req, res) => {
     req.session.destroy((err) => {
