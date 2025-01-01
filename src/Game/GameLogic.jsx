@@ -10,7 +10,29 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         const audioPlayer = document.createElement("audio")
         audioPlayer.src = audioSourceURL
         audioRef.current = audioPlayer
+        const handleAudioEnd = () => {
+            console.log("audio finished")
+        }
+        audioRef.current.addEventListener("ended", handleAudioEnd)
+        // Clean up the listener
+        return () => {
+            audioRef.current.removeEventListener("ended", handleAudioEnd)
+        }
     }, [])
+
+    const audioStart = async () => {
+        return new Promise((resolve) => {
+            const onAudioEnd = () => {
+                audioRef.current.removeEventListener('ended', onAudioEnd)
+                resolve()
+            }
+            audioRef.current.addEventListener('ended', onAudioEnd);
+            audioRef.current.play().catch((error) => {
+                console.error('Error playing audio:', error)
+                resolve()
+            });
+        })
+    }
     const audioPlay = () => {
         if (audioRef.current) {
             audioRef.current.play();
@@ -73,9 +95,15 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         }
     },[commandToGameTrigger])
 
-    function startGame(){
-        audioPlay()
-        transcriptOutput("Intro")
+    async function startGame() {
+        // TODO : RE-ADD THE INTRO WITH NEW TECH
+        // audioPlay()
+        // transcriptOutput("Intro")
+        audioRef.current.src = "./src/Audio/Narration/forestIntro.mp3"
+        transcriptOutput("forestIntro")
+        await audioStart()
+        postTextToConsole("Choose your path. Do you want to go left, or right?", "")
+        // TODO take input
     }
 
     async function transcriptOutput(transcriptName) {
