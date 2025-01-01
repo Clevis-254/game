@@ -74,7 +74,6 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     },[commandToGameTrigger])
 
     function startGame(){
-        // postTextToConsole("Test", "TestSpeaker")
         audioPlay()
         transcriptOutput("Intro")
     }
@@ -101,6 +100,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             }
             transcriptRef.current.innerHTML = delayedTranscript
         }
+        transcriptRef.current.innerHTML = ""
+        postTextToConsole(delayedTranscript, "")
     }
     return(
         <>

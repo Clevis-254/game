@@ -118,7 +118,7 @@ export const Console =
                 case "pause":
                 case "speed up":
                 case "slow down":
-                    // TODO : make it so rewind can be "rewind x" for x seconds. Might need to pre-check or use an IF for this.
+                    // TODO : make it so rewind can be "rewind x" for x seconds. Might need to pre-process or use an IF for this.
                 case "rewind":
                     printUserInput()
                     commandToGame(console_input_text)
@@ -168,7 +168,11 @@ export const Console =
 
                 let resultMessages = []
                 for (let i=0;i<result[0].Messages.length;i++){
-                    resultMessages.push(result[0].Messages[i].Speaker + " : " + result[0].Messages[i].Message)
+                    if(result[0].Messages[i].Speaker === ""){
+                        resultMessages.push(result[0].Messages[i].Message)
+                    } else {
+                        resultMessages.push(result[0].Messages[i].Speaker + " : " + result[0].Messages[i].Message)
+                    }
                 }
                 setConsoleText(resultMessages)
 
