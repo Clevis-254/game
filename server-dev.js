@@ -52,19 +52,45 @@ try {
 } catch (error) {
     console.error("Error connecting to MongoDB:", error);
 }
-// TODO : TEMP CODE AS OUR DB IS CURRENTLY ENTIRELY LOCAL TO MAKE SURE THAT A SINGLE DEFAULT USERID IS ADDED TO THE MESSAGE SYSTEM
-async function firstConsoleUser(){
+// async function firstConsoleUser(){
+//     try {
+//         const exists = await consoleLogHistorySchema.exists({ UserID: 0 });
+//         if(!exists){
+//             const newFirstUser = await consoleLogHistorySchema.create({UserID: 0, Messages: []})
+//         }
+//     } catch (error) {
+//         console.log(`Error creating first user : ${error.message}`)
+//     }
+// }
+// firstConsoleUser()
+
+// making console so that it can use live data instead
+// Get or create user console if it doesn't exist
+async function getUserConsole(userId) {
     try {
-        const exists = await consoleLogHistorySchema.exists({ UserID: 0 });
-        if(!exists){
-            const newFirstUser = await consoleLogHistorySchema.create({UserID: 0, Messages: []})
+        let userConsole = await consoleLogHistorySchema.findOne({ UserID: userId });
+        /// if user does not exist , a new console or game is created in the system.
+        if (!userConsole) {
+            userConsole = await consoleLogHistorySchema.create({
+                UserID: userId,
+                Messages: [],
+                createdAt: new Date(),
+                lastAccessed: new Date()
+            });
+            // if the user exists, the last accessed time is updated 
+            // TODO perhaps the console will be loading the game progress
+        } else {
+            await consoleLogHistorySchema.updateOne(
+                { UserID: userId },
+                { $set: { lastAccessed: new Date() } }
+            );
         }
+        return userConsole;
     } catch (error) {
-        console.log(`Error creating first user : ${error.message}`)
+        console.error(`Error managing user console: ${error.message}`);
+        throw error;
     }
 }
-firstConsoleUser()
-
 // user samples 
 async function save() {
     try {
@@ -146,6 +172,9 @@ app.post("/login", express.json(), async (req, res) => {
                 message: "invalid credentials"
             }); 
         }
+        // get the console of the user if it exists
+        await getUserConsole(user._id);
+
 
         // assigning sessions to the user while allowing them to login 
         req.session.user = {
@@ -215,7 +244,7 @@ app.post('/logout', ensureAuthenticated, async (req, res) => {
     }
 });
 
-app.get("/get_console_history", async (req, res) => {
+app.get("/get_console_history", ensureAuthenticated,async (req, res) => {
     console.log("GET /get_console_history called")
     try {
         // TODO : integrate with the login system to get the correct userID
@@ -229,7 +258,7 @@ app.get("/get_console_history", async (req, res) => {
 })
 
 // Route for posting a new console message to the database
-app.post("/post_console_history", async (req, res) => {
+app.post("/post_console_history",ensureAuthenticated ,async (req, res) => {
     console.log ("POST /post_console_history called")
     try {
         const { MessageID, Message, Speaker } = req.body
@@ -251,7 +280,7 @@ app.post("/post_console_history", async (req, res) => {
 
 
 // POST route for deleting all console history
-app.post("/post_clear_console", async (req, res) => {
+app.post("/post_clear_console", ensureAuthenticated,async (req, res) => {
     console.log("POST /post_clear_console called")
     try {
         // TODO : integrate with the login system to get the correct userID
