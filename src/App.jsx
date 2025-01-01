@@ -1,10 +1,11 @@
 import React from "react"
 import { Banner } from "./Banner"
-import { Play } from "./Play"
+import { Play } from "./Pages/Play.jsx"
 import { Routes, Route } from "react-router-dom"
 import UserStats from "./UserStats.jsx";
 import MyStats from "./MyStats.jsx";
 import Login from "@/Login/login.jsx";
+import "./styles/index.css";
 
 
 
