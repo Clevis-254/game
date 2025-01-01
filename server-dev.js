@@ -176,14 +176,43 @@ app.post("/login", express.json(), async (req, res) => {
 });
 
 // logout route
-app.post('/logout', ensureAuthenticated, (req, res) => {
-    req.session.destroy((err) => {
-        if (err) {
-            return res.status(500).json({ message: 'Logout failed' });
+app.post('/logout', ensureAuthenticated, async (req, res) => {
+    try {
+        // Clear any authenticated user data
+        if (req.session) {
+            // Destroy the session
+            await new Promise((resolve, reject) => {
+                req.session.destroy((err) => {
+                    if (err) reject(err);
+                    resolve();
+                });
+            });
+            // Clear the session cookie
+            res.clearCookie('connect.sid', {
+                path: '/',
+                httpOnly: true,
+                secure:false,//to be used in prod process.env.NODE_ENV === 'production',
+                sameSite: 'strict'
+            });
+            
+            res.status(200).json({ 
+                success: true,
+                message: 'Logout successful',
+                redirect: '/login'
+            });
+        } else {
+            res.status(401).json({
+                success: false,
+                message: 'No active session'
+            });
         }
-        res.clearCookie('connect.sid');
-        res.json({ success: true, message: 'Logged out successfully' });
-    });
+    } catch (error) {
+        console.error('Logout error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error during logout'
+        });
+    }
 });
 
 app.get("/get_console_history", async (req, res) => {
