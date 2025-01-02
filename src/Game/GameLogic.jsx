@@ -194,6 +194,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                     // delayedPosition.current =  Math.round(Math.max(0, delayedPosition.current -= (1000 / 80)))
                     console.log("rewinded pos" + delayedPosition.current)
                 }
+                // TODO : figure out if this break is even needed
                 break
             }
         }
@@ -209,7 +210,11 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             transcriptInterrupt.current = false
             isTranscriptRunning.current = false
         }
-        if (transcriptRewindSeconds.current !== 0){transcriptOutput(transcriptName)}
+        if (transcriptRewindSeconds.current !== 0){
+            transcriptOutput(transcriptName)
+            // The amount of time to rewind had already been calculated in this final pass.
+            transcriptRewindSeconds.current = 0
+        }
     }
     return(
         <>
