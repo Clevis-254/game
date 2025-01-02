@@ -10,7 +10,7 @@
     border: 1px solid #ff3333;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end; /* Ensure the input field stays at the bottom */
+    justify-content: flex-end;
 }
 
 .terminal-content {
@@ -38,7 +38,7 @@
 .terminal-input-line {
     display: flex;
     align-items: center;
-    margin-top: auto; /* Ensure the input field stays at the bottom */
+    margin-top: auto;
 }
 
 .prompt {
