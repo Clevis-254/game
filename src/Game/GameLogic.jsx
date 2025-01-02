@@ -11,14 +11,11 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     let isTranscriptRunning = useRef(false)
     let transcriptRewindSeconds = useRef(0)
     // TODO remove all references of this in the code and replace it directly with audioRef.current.playbackRate
-    // TODO : Audio playback rate might not be consistent and changing it might only work if audio is currently
-    //  playing. If that is the case, rename this audioSpeed and use it as the base to direct playbackRate instead
-    let transcriptSpeed = useRef(1)
+    let audioSpeed = useRef(1)
 
     // When the page first loads, create an audio player not attached to the DOM, so it isn't visible.
     useEffect(() => {
-        const audioPlayer = document.createElement("audio")
-        audioRef.current = audioPlayer
+        audioRef.current = document.createElement("audio")
         // TODO look into axing this function and event handlers we handle it elsewhere now
         const handleAudioEnd = () => {
             console.log("audio finished")
@@ -36,6 +33,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                 audioRef.current.removeEventListener('ended', onAudioEnd)
                 resolve()
             }
+            audioRef.current.playbackRate = audioSpeed.current
             audioRef.current.addEventListener('ended', onAudioEnd);
             audioRef.current.play().catch((error) => {
                 console.error('Error playing audio:', error)
@@ -58,14 +56,14 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     }
     const audioSpeedUp = () => {
         if (audioRef.current && audioRef.current.playbackRate < 3) {
-            transcriptSpeed.current = audioRef.current.playbackRate += 0.5;
+            audioSpeed.current = audioRef.current.playbackRate += 0.5;
         }
     }
     // TODO use the same IF statement as above but for != 0.5 to remove the math.max function
     //  and simplify code
     const audioSlowDown = () => {
         if (audioRef.current) {
-            audioRef.current.playbackRate = transcriptSpeed.current
+            audioRef.current.playbackRate = audioSpeed.current
                 = Math.max(0.5, audioRef.current.playbackRate - 0.5);
         }
     }
@@ -157,11 +155,13 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             return
         }
         gameStarted.current = true
-        // TODO : RE-ADD THE INTRO WITH NEW TECH
-        // audioPlay()
-        // transcriptOutput("Intro")
         await new Promise(async (resolve, reject) => {
             cancel = reject;
+            // Intro
+            audioRef.current.src = "./src/Audio/Narration/Intro.mp3"
+            transcriptOutput("Intro")
+            await audioStart()
+            // Forest
             audioRef.current.src = "./src/Audio/Narration/forestIntro.mp3"
             transcriptOutput("forestIntro")
             await audioStart()
@@ -182,10 +182,12 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         postTextToConsole("You picked 'right'", "")
     }
 
+    // TODO : Perhaps add another symbol to the transcripts to make a new paragraph
     async function transcriptOutput(transcriptName) {
         // Prevents this from running multiple times
         if (isTranscriptRunning.current){return}
         isTranscriptRunning.current = true
+        // TODO : make finding the transcript text its own function so it only gets run when it needs to
         // Find the desired transcript
         let transcriptText
         for (const [key, value] of Object.entries(transcripts)) {
@@ -201,8 +203,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         for (let i=delayedPosition.current; i < transcriptText.length; i++) {
             char = transcriptText[i]
 
-            transcriptDelayTimer = 1000 / transcriptSpeed.current
-            transcriptCharacterDelayTimer = 80 / transcriptSpeed.current
+            transcriptDelayTimer = 1000 / audioSpeed.current
+            transcriptCharacterDelayTimer = 80 / audioSpeed.current
             if (transcriptInterrupt.current === false){
                 // ^ in the transcript = 1s delay
                 if (char === "^") {
