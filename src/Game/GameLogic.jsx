@@ -114,7 +114,14 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         }
     },[commandToGameTrigger])
 
+    let gameStarted = useRef(false)
     async function startGame() {
+        // Prevents this from running multiple times
+        if (gameStarted.current === true){
+            postTextToConsole("The game is already started", "Console")
+            return
+        }
+        gameStarted.current = true
         // TODO : RE-ADD THE INTRO WITH NEW TECH
         // audioPlay()
         // transcriptOutput("Intro")
@@ -123,6 +130,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         await audioStart()
         waitingForUserInput.current = "Forest"
         // TODO : integrate tts
+        // Slight delay to make sure the transcript is printed.
+        await new Promise(resolve => setTimeout(resolve, 300))
         postTextToConsole("Choose your path. Do you want to go left or right?", "")
         // If next user input matches it will go to the path, see the command list default case
     }
@@ -137,9 +146,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     }
 
     async function transcriptOutput(transcriptName) {
-        if (isTranscriptRunning.current){
-            return
-        }
+        // Prevents this from running multiple times
+        if (isTranscriptRunning.current){return}
         isTranscriptRunning.current = true
         // Find the desired transcript
         let transcriptText
@@ -191,6 +199,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                             break
                         }
                     }
+                    // If time addition never met the rewind amount, then we must have hit the start of the rewind
+                    if (timeAddition < (transcriptRewindSeconds.current * 1000)){delayedPosition.current = 0}
                     // delayedPosition.current =  Math.round(Math.max(0, delayedPosition.current -= (1000 / 80)))
                     console.log("rewinded pos" + delayedPosition.current)
                 }
