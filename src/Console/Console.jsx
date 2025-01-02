@@ -106,6 +106,8 @@ export const Console =
                     printUserInput()
                     const outputList = ["Here is a list of all current commands",
                         "- 'start game' : Starts the game from the last saved point",
+                        "- 'end game' : Ends the game session",
+                        "- 'restart' : Restarts the game session from the beginning",
                         "- 'clear' : Clear the console history (does not affect the game)",
                         "- 'pause' : Pause the current dialogue",
                         "- 'play' : Play paused dialogue",
@@ -119,11 +121,13 @@ export const Console =
                     }
                     break
                 case "play":
+                case "pause":
                 case "speed up":
                 case "slow down":
                     // TODO : make it so rewind can be "rewind x" for x seconds. Might need to pre-process or use an IF for this.
                 case "rewind":
-                case "pause":
+                case "end game":
+                case "restart":
                     printUserInput()
                     commandToGame(console_input_text)
                     break

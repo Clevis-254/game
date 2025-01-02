@@ -19,6 +19,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     useEffect(() => {
         const audioPlayer = document.createElement("audio")
         audioRef.current = audioPlayer
+        // TODO look into axing this function and event handlers we handle it elsewhere now
         const handleAudioEnd = () => {
             console.log("audio finished")
         }
@@ -107,8 +108,15 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             case "rewind":
                 audioRewind(10)
                 break
+            case "end game":
+                endGame()
+                break
+            case "restart":
+                endGame(true)
+                break
             // TODO : consider setting the command ref to blank to prevent double commands on re-renders
             default:
+                // Used for in game path branching
                 switch (waitingForUserInput.current){
                     case "Forest":
                         if (consoleToGameCommandRef.current === "left"){forestLeft()}
@@ -122,7 +130,26 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         }
     },[commandToGameTrigger])
 
+    // Resets all possible variables it can.
+    async function endGame(restart){
+        if (cancel) cancel("Ended Game")
+        audioPause()
+        transcriptInterrupt.current = true
+        gameStarted.current = false
+        // Just to make sure the transcript is printed before this.
+        await new Promise(resolve => setTimeout(resolve, 300))
+        delayedPosition.current = 0
+        if(restart){
+            postTextToConsole("Starting game from the beginning.", "Console")
+            startGame()
+        } else {
+            postTextToConsole("Game session ended.", "Console")
+        }
+    }
+
     let gameStarted = useRef(false)
+
+    let cancel
     async function startGame() {
         // Prevents this from running multiple times
         if (gameStarted.current === true){
@@ -133,15 +160,17 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         // TODO : RE-ADD THE INTRO WITH NEW TECH
         // audioPlay()
         // transcriptOutput("Intro")
-        audioRef.current.src = "./src/Audio/Narration/forestIntro.mp3"
-        transcriptOutput("forestIntro")
-        await audioStart()
-        waitingForUserInput.current = "Forest"
-        // TODO : integrate tts
-        // Slight delay to make sure the transcript is printed.
-        await new Promise(resolve => setTimeout(resolve, 300))
-        postTextToConsole("Choose your path. Do you want to go left or right?", "")
-        // If next user input matches it will go to the path, see the command list default case
+        await new Promise(async (resolve, reject) => {
+            cancel = reject;
+            audioRef.current.src = "./src/Audio/Narration/forestIntro.mp3"
+            transcriptOutput("forestIntro")
+            await audioStart()
+            waitingForUserInput.current = "Forest"
+            // TODO : integrate tts
+            // Slight delay to make sure the transcript is printed.
+            await new Promise(resolve => setTimeout(resolve, 300))
+            postTextToConsole("Choose your path. Do you want to go left or right?", "")
+        })
     }
 
     // TODO : Develop on next issue
@@ -196,13 +225,9 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                 // Go in reverse, adding up all the ms that the chars will take to traverse, then once
                 // it matches the seconds (within a small range not exact) we pick that position
                 if (transcriptRewindSeconds.current !== 0){
-                    console.log("OLD pos" + delayedPosition.current)
-                    console.log("trancript reiwnd" + transcriptRewindSeconds.current * 1000)
                     let timeAddition = 0
                     for(let i=delayedPosition.current;i>=0;i--){
-                        console.log("i " + i)
                         if(transcriptText[i] === "^"){
-                            // TODO SPEED
                             timeAddition += transcriptDelayTimer
                         } if (transcriptText[i] === " "){} // Add nothing
                         else {
@@ -217,7 +242,6 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                     // If time addition never met the rewind amount, then we must have hit the start of the rewind
                     if (timeAddition < (transcriptRewindSeconds.current * 1000)){delayedPosition.current = 0}
                     // delayedPosition.current =  Math.round(Math.max(0, delayedPosition.current -= (1000 / 80)))
-                    console.log("rewinded pos" + delayedPosition.current)
                 }
                 // TODO : figure out if this break is even needed
                 break
