@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
-export const Signup = () => {
+export const SignUp = () => {
     const { register, handleSubmit, formState: { errors } } = useForm();
     const [signupError, setSignupError] = useState('');
 
@@ -18,14 +18,12 @@ export const Signup = () => {
 
             const result = await response.json();
             if (result.success) {
-                console.log('Signup successful, redirecting...');
                 window.location.href = result.redirect;
             } else {
-                setSignupError(result.message);
+                setSignupError(result.message); // Set the error message from the server
             }
         } catch (error) {
             setSignupError('An error occurred during signup. Please try again.');
-            console.error('Error:', error);
         }
     };
 
@@ -78,4 +76,4 @@ export const Signup = () => {
     );
 };
 
-export default Signup;
+export default SignUp;

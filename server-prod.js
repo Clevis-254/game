@@ -40,6 +40,12 @@ app.post('/signup', async (req, res) => {
         const user = new User({ Name: name, email, Password: password });
         await user.save();
 
+        // Catch and send validation error messages
+        if (error.name === 'ValidationError') {
+            const messages = Object.values(error.errors).map(err => err.message);
+            return res.status(400).json({ success: false, message: messages.join(', ') });
+        }
+
         res.status(201).json({ success: true, redirect: '/login' });
     } catch (error) {
         console.error('Signup error:', error);

@@ -8,6 +8,7 @@ import session from 'express-session';
 import bcrypt, { compare } from 'bcrypt';
 //importing the user schema 
 import User from './models/UserSchema.js';
+import error from "express/lib/view.js";
 
 
 //importing express into the server
@@ -190,6 +191,12 @@ app.post('/signup', async (req, res) => {
         // Create a new user
         const user = new User({ Name: name, email, Password: password });
         await user.save();
+
+        // Catch and send validation error messages
+        if (error.name === 'ValidationError') {
+            const messages = Object.values(error.errors).map(err => err.message);
+            return res.status(400).json({ success: false, message: messages.join(', ') });
+        }
 
         res.status(201).json({ success: true, redirect: '/login' });
     } catch (error) {
