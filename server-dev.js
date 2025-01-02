@@ -172,8 +172,10 @@ app.post("/login", express.json(), async (req, res) => {
                 message: "invalid credentials"
             }); 
         }
-        // get the console of the user if it exists
-        await getUserConsole(user._id);
+        // Only create/get console for regular users
+        if (user.UserType !== 'admin') {
+            await getUserConsole(user._id, user.UserType);
+        }
 
 
         // assigning sessions to the user while allowing them to login 
