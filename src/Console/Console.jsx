@@ -3,9 +3,8 @@ import {useState, useRef, useEffect, forwardRef, useImperativeHandle} from 'reac
 // NOTE : No game logic should be in this module.
 // Accessibility logic is fine (e.g rewind to last dialogue)
 // DESIGN NOTE : We fetch the entire console history every time we reload because this is a small game with few
-// users. If we were to scale up then it would be worth doing.
+// users. If we were to scale up then it would be worth doing only what is needed.
 
-// TODO : Make all API calls include the users ID when users are implemented
 // TODO : Explore not using forwardRefs as they will be depreciated in future versions and perhaps using
 //  useEffect to push custom requests similar to how you push commands from console>game
 export const Console =
@@ -91,7 +90,6 @@ export const Console =
             const console_input_text = console_input_box.value
             console_input_box.value = ""
 
-            // TODO : Functionality for choosing paths in game
             switch (console_input_text) {
                 case "clear":
                     setConsoleText([...consoleText, ("Console : Clearing Console now...")])
@@ -108,23 +106,30 @@ export const Console =
                     printUserInput()
                     const outputList = ["Here is a list of all current commands",
                         "- 'start game' : Starts the game from the last saved point",
-                        "- 'clear' : Clear the console history (does not affect the game)"]
+                        "- 'clear' : Clear the console history (does not affect the game)",
+                        "- 'pause' : Pause the current dialogue",
+                        "- 'play' : Play paused dialogue",
+                        "- 'speed up' : Speed up dialogue",
+                        "- 'slow down' : Slow down dialogue",
+                        "- 'rewind' : Rewind 10 seconds of dialogue"
+                    ]
                     for (let i in outputList){
                         setConsoleText([...consoleText, `Console : ${outputList[i]}`])
                         post_new_input(outputList[i], "Console")
                     }
                     break
                 case "play":
-                case "pause":
                 case "speed up":
                 case "slow down":
                     // TODO : make it so rewind can be "rewind x" for x seconds. Might need to pre-process or use an IF for this.
                 case "rewind":
+                case "pause":
                     printUserInput()
                     commandToGame(console_input_text)
                     break
                 default:
                     printUserInput()
+                    commandToGame(console_input_text)
                     console.log("Console:Not on the command list")
             }
 
