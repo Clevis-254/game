@@ -3,12 +3,17 @@ import transcripts from "../Audio/Narration/transcripts.jsx";
 
 export function GameLogic({ postTextToConsole, transcriptRef,
                               commandToGameTrigger, setCommandToGameTrigger, consoleToGameCommandRef}) {
+
     const audioRef = useRef(null)
     const waitingForUserInput = useRef("")
     let transcriptInterrupt = useRef(false)
     let delayedPosition = useRef(0)
     let isTranscriptRunning = useRef(false)
     let transcriptRewindSeconds = useRef(0)
+    // TODO remove all references of this in the code and replace it directly with audioRef.current.playbackRate
+    // TODO : Audio playback rate might not be consistent and changing it might only work if audio is currently
+    //  playing. If that is the case, rename this audioSpeed and use it as the base to direct playbackRate instead
+    let transcriptSpeed = useRef(1)
 
     // When the page first loads, create an audio player not attached to the DOM, so it isn't visible.
     useEffect(() => {
@@ -52,12 +57,15 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     }
     const audioSpeedUp = () => {
         if (audioRef.current && audioRef.current.playbackRate < 3) {
-            audioRef.current.playbackRate += 0.5;
+            transcriptSpeed.current = audioRef.current.playbackRate += 0.5;
         }
     }
+    // TODO use the same IF statement as above but for != 0.5 to remove the math.max function
+    //  and simplify code
     const audioSlowDown = () => {
         if (audioRef.current) {
-            audioRef.current.playbackRate = Math.max(0.5, audioRef.current.playbackRate - 0.5);
+            audioRef.current.playbackRate = transcriptSpeed.current
+                = Math.max(0.5, audioRef.current.playbackRate - 0.5);
         }
     }
     const audioRewind = (seconds) => {
@@ -158,18 +166,23 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         }
         let delayedTranscript = ""
         let char = ""
-
+        // This is for when we use ^ for a second-long delay
+        let transcriptDelayTimer
+        let transcriptCharacterDelayTimer
         for (let i=delayedPosition.current; i < transcriptText.length; i++) {
             char = transcriptText[i]
+
+            transcriptDelayTimer = 1000 / transcriptSpeed.current
+            transcriptCharacterDelayTimer = 80 / transcriptSpeed.current
             if (transcriptInterrupt.current === false){
                 // ^ in the transcript = 1s delay
                 if (char === "^") {
-                    await new Promise(resolve => setTimeout(resolve, 1000))
+                    await new Promise(resolve => setTimeout(resolve, transcriptDelayTimer))
                 } else if(char === " "){
                     await new Promise(resolve => setTimeout(resolve, 0))
                     delayedTranscript += char
                 } else {
-                    await new Promise(resolve => setTimeout(resolve, 80))
+                    await new Promise(resolve => setTimeout(resolve, transcriptCharacterDelayTimer))
                     delayedTranscript += char
                 }
                 transcriptRef.current.innerHTML = delayedTranscript
@@ -189,9 +202,11 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                     for(let i=delayedPosition.current;i>=0;i--){
                         console.log("i " + i)
                         if(transcriptText[i] === "^"){
-                            timeAddition += 1000
-                        } else {
-                            timeAddition += 80
+                            // TODO SPEED
+                            timeAddition += transcriptDelayTimer
+                        } if (transcriptText[i] === " "){} // Add nothing
+                        else {
+                            timeAddition += transcriptCharacterDelayTimer
                         }
                         console.log(timeAddition)
                         if (timeAddition >= (transcriptRewindSeconds.current * 1000)){
