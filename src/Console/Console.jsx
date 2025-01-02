@@ -128,9 +128,11 @@ export const Console =
                     commandToGame(console_input_text)
                     break
                 default:
-                    printUserInput()
-                    commandToGame(console_input_text)
-                    console.log("Console:Not on the command list")
+                    if(console_input_text !== ""){
+                        printUserInput()
+                        commandToGame(console_input_text)
+                        console.log("Console:Not on the command list")
+                    }
             }
 
             // Print the user input to console
