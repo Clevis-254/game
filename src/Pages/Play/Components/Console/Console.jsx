@@ -1,4 +1,5 @@
 import {useState, useRef} from 'react'
+import './ConsoleStyling.css';
 
 // NOTE : No game logic should be in this module.
 // Accessibility logic is fine (e.g rewind to last dialogue)
@@ -99,15 +100,21 @@ export function Console() {
 
     return (
         <>
-            <link rel={"stylesheet"} href={"./src/Console/ConsoleStyling.css"} />
-            <div className="wholeConsole">
-                <div className="consoleTextContainer">
+            <div className="terminal" onClick={new_console_input}>
+                <div className="terminal-output">
+
                     {consoleText.map((item, index) => (
+                    <div key={index} className="terminal-line">
+                        <span className="terminal-response">
                         <div key={index}>{item}</div>
+                        </span>
+                    </div>
+
                     ))}
                 </div>
-                <div className="textBoxcontainer">
-                    <input type="text" id="console_input_box" ref={inputRef} onKeyDown={handleEnterKeyDown}/>
+
+                <div className="terminal-input-line">
+                    <input type="text" id="console_input_box" className="terminal-input-field" ref={inputRef} onKeyDown={handleEnterKeyDown}/>
                     <button onClick={new_console_input} type="button" id="enter_button">Enter</button>
                 </div>
             </div>

@@ -8,6 +8,7 @@ import session from 'express-session';
 import bcrypt, { compare } from 'bcrypt';
 //importing the user schema 
 import User from './models/UserSchema.js';
+import error from "express/lib/view.js";
 
 
 //importing express into the server
@@ -42,7 +43,8 @@ app.use(session({
     }
 }));
 // MongoDB Linking Test Code
-const dbURI = "mongodb://localhost:27017/projectDatabase";
+// const dbURI = "mongodb+srv://demo_user:321@cluster0.dayzc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const dbURI = "mongodb://localhost:27017/projectDatabase"
 
 // Updated MongoDB connection using async/await
 try {
@@ -173,9 +175,9 @@ app.post("/login", express.json(), async (req, res) => {
             }); 
         }
         // Only create/get console for regular users
-        if (user.UserType !== 'admin') {
-            await getUserConsole(user._id, user.UserType);
-        }
+        // if (user.UserType !== 'admin') {
+        //     await getUserConsole(user._id, user.UserType);
+        // }
 
 
         // assigning sessions to the user while allowing them to login 
@@ -205,6 +207,39 @@ app.post("/login", express.json(), async (req, res) => {
         res.status(500).json({ success: false, message: "Internal server error" });
     }
 });
+
+
+// signup route
+app.post('/signup', async (req, res) => {
+    try {
+        const { name, email, password } = req.body;
+
+        // Check if the email already exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ success: false, message: 'Email already exists' });
+        }
+
+        // Create a new user
+        const user = new User({ Name: name, email, Password: password });
+        await user.save();
+
+        res.status(201).json({ success: true, redirect: '/login' });
+    } catch (error) {
+        // Catch and handle validation errors
+        if (error.name === 'ValidationError') {
+            const messages = Object.values(error.errors).map(err => err.message);
+            return res.status(400).json({ success: false, message: messages.join(', ') });
+        }
+
+        // Handle other errors
+        console.error('Signup error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+
+
 
 // logout route
 app.post('/logout', ensureAuthenticated, async (req, res) => {

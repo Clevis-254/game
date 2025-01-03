@@ -21,9 +21,9 @@ export function Banner() {
 
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
-      <div className="container">
+      <div className="container d-flex justify-content-between">
         <a className="navbar-brand" href="/">
-          [Game Name Here]
+          TOXIC RŌNIN
         </a>
         <button
           className="navbar-toggler"
@@ -37,8 +37,8 @@ export function Banner() {
           <span className="navbar-toggler-icon"></span>
         </button>
 
-        <div className="collapse navbar-collapse" id="navbarsExample07">
-          <ul className="navbar-nav me-auto">
+        <div className="collapse navbar-collapse justify-content-between" id="navbarsExample07">
+          <ul className="navbar-nav">
             <li className="nav-item">
               <a className="nav-link" href="/play">
                 Play
@@ -55,7 +55,7 @@ export function Banner() {
               </a>
             </li>
           </ul>
-          <button className="btn btn-link nav-link ms-auto" onClick={handleLogout}>
+          <button className="btn btn-link nav-link" onClick={handleLogout}>
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none">
               <path
                 stroke="White"

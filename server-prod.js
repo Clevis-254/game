@@ -25,6 +25,36 @@ app.use('*', async (_, res) => {
     }
 });
 
+// signup route
+app.post('/signup', async (req, res) => {
+    try {
+        const { name, email, password } = req.body;
+
+        // Check if the email already exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ success: false, message: 'Email already exists' });
+        }
+
+        // Create a new user
+        const user = new User({ Name: name, email, Password: password });
+        await user.save();
+
+        res.status(201).json({ success: true, redirect: '/login' });
+    } catch (error) {
+        // Catch and handle validation errors
+        if (error.name === 'ValidationError') {
+            const messages = Object.values(error.errors).map(err => err.message);
+            return res.status(400).json({ success: false, message: messages.join(', ') });
+        }
+
+        // Handle other errors
+        console.error('Signup error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+
 app.listen(5173, () => {
     console.log('http://localhost:5173.');
 });
