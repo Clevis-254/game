@@ -1,17 +1,17 @@
 import mongoose from 'mongoose'
 
-const _consoleLogHistory = new mongoose.Schema(
-    {
-    Messages : [
-        {MessageID : Number,
-        Message : String,
-        Speaker : String,
-        GameID : Number
-        }
-    ],
-    UserID : Number
-}
-);
+const _consoleLogHistory = new mongoose.Schema({
+    Messages: [{
+        MessageID: Number,
+        Message: String,
+        Speaker: String,
+        GameID: Number
+    }],
+    UserID: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }
+});
 // UserID is to link the chat history to the appropriate user
 // Message ID is simply for indexing in order.
 // Game_ID is there if we potentially link each line of dialogue to an ID for replay / stat purposes.

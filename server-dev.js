@@ -54,40 +54,27 @@ try {
 } catch (error) {
     console.error("Error connecting to MongoDB:", error);
 }
-// async function firstConsoleUser(){
-//     try {
-//         const exists = await consoleLogHistorySchema.exists({ UserID: 0 });
-//         if(!exists){
-//             const newFirstUser = await consoleLogHistorySchema.create({UserID: 0, Messages: []})
-//         }
-//     } catch (error) {
-//         console.log(`Error creating first user : ${error.message}`)
-//     }
-// }
-// firstConsoleUser()
-
 // making console so that it can use live data instead
 // Get or create user console if it doesn't exist
-async function getUserConsole(userId) {
+async function getUserConsole(userId, userType) {
     try {
-        let userConsole = await consoleLogHistorySchema.findOne({ UserID: userId });
-        /// if user does not exist , a new console or game is created in the system.
-        if (!userConsole) {
-            userConsole = await consoleLogHistorySchema.create({
-                UserID: userId,
-                Messages: [],
-                createdAt: new Date(),
-                lastAccessed: new Date()
+        if (userType !== 'admin') {
+            let userConsole = await consoleLogHistorySchema.findOne({ 
+                UserID: userId 
             });
-            // if the user exists, the last accessed time is updated 
-            // TODO perhaps the console will be loading the game progress
-        } else {
-            await consoleLogHistorySchema.updateOne(
-                { UserID: userId },
-                { $set: { lastAccessed: new Date() } }
-            );
+            
+            if (!userConsole) {
+                userConsole = await consoleLogHistorySchema.create({
+                    UserID: userId,
+                    Messages: []
+                });
+                console.log(`Created new console for user ${userId}`);
+            } else {
+                console.log(`Loaded existing console for user ${userId}`);
+            }
+            return userConsole;
         }
-        return userConsole;
+        return null;
     } catch (error) {
         console.error(`Error managing user console: ${error.message}`);
         throw error;
@@ -116,13 +103,17 @@ save();
 // authenticated function. checks whether you are authenticated or not
 function ensureAuthenticated(req, res, next) {
     if (req.session && req.session.user) {
-        // User is authenticated
         return next();
     }
-    // User is not authenticated
+    
+    // Check if request wants JSON response
+    if (req.xhr || req.headers.accept.includes('application/json')) {
+        return res.status(401).json({ error: 'Authentication required' });
+    }
+    
+    // Otherwise redirect to login page
     res.redirect('/login');
 }
-
 // basic functions
 app.get("/login", async (req, res) => {
     try {
@@ -175,10 +166,10 @@ app.post("/login", express.json(), async (req, res) => {
             }); 
         }
         // Only create/get console for regular users
-        // if (user.UserType !== 'admin') {
-        //     await getUserConsole(user._id, user.UserType);
-        // }
-
+        if (user.UserType !== 'admin') {
+            await getUserConsole(user._id, user.UserType);
+        }
+        console.log('console loaded');
 
         // assigning sessions to the user while allowing them to login 
         req.session.user = {
@@ -214,32 +205,38 @@ app.post('/signup', async (req, res) => {
     try {
         const { name, email, password } = req.body;
 
-        // Check if the email already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ success: false, message: 'Email already exists' });
         }
 
-        // Create a new user
         const user = new User({ Name: name, email, Password: password });
         await user.save();
 
-        res.status(201).json({ success: true, redirect: '/login' });
+        // Create console for new user
+        await getUserConsole(user._id, user.UserType);
+        console.log('console created');
+
+        // Set up session for new user
+        req.session.user = {
+            id: user._id,
+            email: user.email,
+            userType: user.UserType
+        };
+
+        await req.session.save();
+
+        res.status(201).json({ success: true, redirect: '/play' });
     } catch (error) {
-        // Catch and handle validation errors
         if (error.name === 'ValidationError') {
             const messages = Object.values(error.errors).map(err => err.message);
             return res.status(400).json({ success: false, message: messages.join(', ') });
         }
 
-        // Handle other errors
         console.error('Signup error:', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 });
-
-
-
 
 // logout route
 app.post('/logout', ensureAuthenticated, async (req, res) => {
@@ -280,20 +277,20 @@ app.post('/logout', ensureAuthenticated, async (req, res) => {
         });
     }
 });
-
-app.get("/get_console_history", ensureAuthenticated,async (req, res) => {
-    console.log("GET /get_console_history called")
+app.get("/get_console_history", ensureAuthenticated, async (req, res) => {
     try {
-        // console will be taking in the user's id instead
         const userId = req.session.user.id;
         const consoleHistory = await consoleLogHistorySchema.find({ UserID: userId });
-        res.json(consoleHistory);
+        
+        if (!consoleHistory) {
+            return res.status(404).json({ error: 'No console history found' });
+        }
+        
+        res.status(200).json(consoleHistory);
     } catch (error) {
-        console.error('Error getting console history:', error);
-        res.status(500).send('Internal Server Error');
+        res.status(500).json({ error: error.message });
     }
-})
-
+});
 // Route for posting a new console message to the database
 app.post("/post_console_history",ensureAuthenticated ,async (req, res) => {
     console.log ("POST /post_console_history called")
