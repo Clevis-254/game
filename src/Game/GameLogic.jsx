@@ -5,6 +5,9 @@ import transcripts from "../Audio/Narration/transcripts.jsx";
 // TODO STAT TRACKING : Please keep in mind the project brief encourages us to use any additional statistics
 //  that we think might be valuable to the client so think of extras and implement some of the (optional)
 //  ones I have marked that aren't directly project brief related.
+
+// TODO : Print transcripts current output when the page is exited / reloaded so we can get a better idea
+//   on where we left off
 export function GameLogic({ postTextToConsole, transcriptRef,
                               commandToGameTrigger, setCommandToGameTrigger, consoleToGameCommandRef}) {
 
@@ -67,6 +70,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             transcriptInterrupt.current = true
         }
     }
+    // TODO : feedback to the user on current speed
     const audioSpeedUp = () => {
         if (audioRef.current && audioRef.current.playbackRate < 3) {
             audioSpeed.current = audioRef.current.playbackRate += 0.5;
@@ -126,7 +130,6 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             case "restart":
                 endGame(true)
                 break
-            // TODO : consider setting the command ref to blank to prevent double commands on re-renders
             default:
                 // TODO STAT TRACK : waitingForUserInput will match the current choice point, any
                 //  thing added in this switch will need to be tracked. More to be added in the next
@@ -144,9 +147,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                         console.log("GameLogic:Not a command match")
                 }
         }
-        // TODO : Uncomment out this line and see if it doesn't break anything, should stop repeat commands
-        //  as was initally intended in designing commandToGame
-        // consoleToGameCommandRef = ""
+        consoleToGameCommandRef = ""
     },[commandToGameTrigger])
 
     // Will run a resolve on the current await promise being used to block story progress
@@ -213,9 +214,9 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             // Block until transcript and audio are done
             await new Promise(async resolve => {storyBlock=resolve})
             waitingForUserInput.current = "Forest"
-            // TODO : integrate tts
             // Slight delay to make sure the transcript is printed.
             await new Promise(resolve => setTimeout(resolve, 300))
+            // TODO : integrate tts
             postTextToConsole("Choose your path. Do you want to go left or right?", "")
             resolve()
         })
