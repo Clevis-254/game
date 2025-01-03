@@ -1,5 +1,5 @@
 import React from 'react';
-import { Console } from "../Console/Console.jsx";
+import { Console } from "./Console/Console.jsx";
 
 export function Story() {
   return (
