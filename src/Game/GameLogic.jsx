@@ -182,6 +182,10 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             // Forest
             audioRef.current.src = "./src/Audio/Narration/forestIntro.mp3"
             transcriptOutput("forestIntro")
+            // TODO : Make it so that we no longer use audioStart and we use the below 2 lines to block
+            //  until both the audio and transcript is done.
+            // let storyBlock
+            // await new Promise(async (resolve, reject) => {storyBlock=resolve})
             await audioStart()
             waitingForUserInput.current = "Forest"
             // TODO : integrate tts
@@ -224,7 +228,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             char = transcriptText[i]
 
             transcriptDelayTimer = 1000 / audioSpeed.current
-            transcriptCharacterDelayTimer = 80 / audioSpeed.current
+            transcriptCharacterDelayTimer = 90 / audioSpeed.current
             if (transcriptInterrupt.current === false){
                 // ^ in the transcript = 1s delay
                 if (char === "^") {
