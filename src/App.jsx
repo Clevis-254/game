@@ -1,10 +1,10 @@
 import React from "react"
-import { Banner } from "./Banner"
-import { Play } from "./Play"
+import { Play } from "./Pages/Play/Play.jsx";
 import { Routes, Route } from "react-router-dom"
-import UserStats from "./UserStats.jsx";
-import MyStats from "./MyStats.jsx";
-
+import UserStats from "./Pages/UserStats/UserStats.jsx";
+import MyStats from "./Pages/MyStats/MyStats.jsx";
+import Login from "@/Pages/Login/login.jsx";
+import SignUp from "@/SignUp/SignUp.jsx";
 
 
 const App = () => {
@@ -13,6 +13,8 @@ const App = () => {
             <Route path="/play" element={<Play />} />
             <Route path="/my-stats" element={<MyStats />} />
             <Route path="/user-stats" element={<UserStats />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<SignUp />} />
         </Routes>
     )
 }

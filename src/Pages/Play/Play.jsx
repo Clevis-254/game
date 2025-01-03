@@ -1,9 +1,13 @@
-import { Console } from "./Console/Console.jsx"
-import Banner from "./Banner.jsx";
-import GameLogic from "./Game/GameLogic.jsx";
-import { useRef, useState } from "react"
+import Banner from "../Banner.jsx";
+import "../../styles/index.css";
+import { Hero } from "./Components/Hero.jsx";
+import { Features } from "./Components/Features.jsx";
+import { Story } from "./Components/Story.jsx";
+import GameLogic from "@/Game/GameLogic.jsx";
+import {useRef, useState} from "react";
+import {Console} from "@/Pages/Play/Components/Console/Console.jsx";
 
-export function Play(){
+export function Play() {
 
     const consoleRef = useRef()
     const transcriptRef = useRef()
@@ -20,8 +24,11 @@ export function Play(){
 
     return (
         <>
-        <h1>Play</h1>
             <Banner />
+            <Hero />
+            <Features />
+            <Banner />
+            <Story />
             <Console ref={consoleRef}
                      transcriptRef={transcriptRef}
                      commandToGameTrigger={commandToGameTrigger}
@@ -32,6 +39,8 @@ export function Play(){
                        commandToGameTrigger={commandToGameTrigger}
                        setCommandToGameTrigger={setCommandToGameTrigger}
                        consoleToGameCommandRef={consoleToGameCommandRef}/>
+
+
         </>
-    )
+    );
 }
