@@ -10,8 +10,11 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
     const audioRef = useRef(null)
     const waitingForUserInput = useRef("")
+    // Set to true when a command is played to interrupt the currently running transcript
     let transcriptInterrupt = useRef(false)
+    // Set the position we start at when transcribing
     let delayedPosition = useRef(0)
+    // Stops multiple runs of transcript function
     let isTranscriptRunning = useRef(false)
     let transcriptRewindSeconds = useRef(0)
     // TODO remove all references of this in the code and replace it directly with audioRef.current.playbackRate
@@ -31,6 +34,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         }
     }, [])
 
+    // audio... functions for handling playing of audio + some transcript code
     const audioStart = async () => {
         return new Promise((resolve) => {
             // TODO STAT TRACK : (Optional) Could at the end of an audio add its length
@@ -92,6 +96,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         }
         // TODO STAT TRACK : Don't do the tracking of commands here, do it in Console.jsx as not
         //  all commands are passed to this component.
+        // Check the incoming command
         switch (consoleToGameCommandRef.current) {
             case "start game":
                 startGame()
@@ -130,6 +135,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                         else if (consoleToGameCommandRef.current === "right"){forestRight()}
                         // TODO : integrate tts
                         else {postTextToConsole(`Please pick either "left" or "right"`)}
+                        waitingForUserInput.current = ""
                         break
                     default:
                         console.log("GameLogic:Not a command match")
@@ -146,7 +152,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     //  by the user to stop the timer as well
     // Resets all possible variables it can and stops/restarts the game
     async function endGame(restart){
-        if (cancel) cancel("Ended Game")
+        if (cancelGame) cancelGame("Ended Game")
         audioPause()
         transcriptInterrupt.current = true
         gameStarted.current = false
@@ -163,7 +169,9 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
     // TODO STAT TRACK : Add in-game tracking time here.
     let gameStarted = useRef(false)
-    let cancel
+    // Cancel holds the reject function of the promise. This allows us to cancel the function
+    // from anywhere else in the code.
+    let cancelGame
     async function startGame() {
         // Prevents this from running multiple times
         if (gameStarted.current === true){
@@ -171,8 +179,9 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             return
         }
         gameStarted.current = true
+        // Promise used to cancel the game at any point
         await new Promise(async (resolve, reject) => {
-            cancel = reject;
+            cancelGame = reject;
             // Intro
             // TODO STAT TRACK : Number of audio files played here and other similar code blocks
             // TODO make these 3 lines a function since it doesn't need to be repeated
@@ -192,62 +201,80 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             // Slight delay to make sure the transcript is printed.
             await new Promise(resolve => setTimeout(resolve, 300))
             postTextToConsole("Choose your path. Do you want to go left or right?", "")
+            resolve()
         })
     }
 
     // TODO STAT TRACK : Alternative place(s) to put the heatmap data instead of the switch, I
     //  would personally recommend the switch to keep code cleaner and keep heatmap tracking code bundled
     // TODO : Develop on next issue
+    // Picked left on forest branching choice
     async function forestLeft(){
         postTextToConsole("You picked 'left'", "")
     }
     // TODO : Develop on next issue
+    // Picked right on forest branching choice
     async function forestRight(){
         postTextToConsole("You picked 'right'", "")
     }
 
     // TODO : Perhaps add another symbol to the transcripts to make a new paragraph
+    // Called when we need to start transcribing a text in line with an audio.
+    // Works by printing over the transcript letter by letter with a delay
+    // For breaks in the audio with no dialogue it will parse a "^" as a 1 second delay
     async function transcriptOutput(transcriptName) {
         // Prevents this from running multiple times
         if (isTranscriptRunning.current){return}
         isTranscriptRunning.current = true
         // TODO : make finding the transcript text its own function so it only gets run when it needs to
-        // Find the desired transcript
+        // Find the desired transcript out of the whole list in transcripts.jsx
         let transcriptText
         for (const [key, value] of Object.entries(transcripts)) {
             if (key === transcriptName) {
                 transcriptText = value
             }
         }
+        // This is the transcript as seen by the user on the page
         let delayedTranscript = ""
+        // Current letter being iterated over
         let char = ""
         // This is for when we use ^ for a second-long delay
         let transcriptDelayTimer
+        // Character delay
         let transcriptCharacterDelayTimer
+        // Iterate over the transcript. Starts part way though if delayedPosition isn't 0 (for rewinding and pause/play)
         for (let i=delayedPosition.current; i < transcriptText.length; i++) {
             char = transcriptText[i]
 
+            // Change the delay timer based on the audio speed, so they match.
             transcriptDelayTimer = 1000 / audioSpeed.current
             transcriptCharacterDelayTimer = 90 / audioSpeed.current
+            // Interrupt if a process requires it
             if (transcriptInterrupt.current === false){
                 // ^ in the transcript = 1s delay
                 if (char === "^") {
                     await new Promise(resolve => setTimeout(resolve, transcriptDelayTimer))
+                // No delay for spaces
                 } else if(char === " "){
                     await new Promise(resolve => setTimeout(resolve, 0))
                     delayedTranscript += char
+                // Regular character
                 } else {
                     await new Promise(resolve => setTimeout(resolve, transcriptCharacterDelayTimer))
                     delayedTranscript += char
                 }
+                // Update the visual transcript
                 transcriptRef.current.innerHTML = delayedTranscript
                 // Transcript was interrupted
             } else {
+                // Clear visual transcript then print what we processed to the console
                 transcriptRef.current.innerHTML = ""
                 postTextToConsole(delayedTranscript, "")
 
+                // Set the delayed position to wherever we got interrupted
                 delayedPosition.current = i
 
+                // If we requested a rewind transcriptRewindSeconds will not be 0.
                 // Go in reverse, adding up all the ms that the chars will take to traverse, then once
                 // it matches the seconds (within a small range not exact) we pick that position
                 if (transcriptRewindSeconds.current !== 0){
@@ -259,7 +286,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                         else {
                             timeAddition += transcriptCharacterDelayTimer
                         }
-                        console.log(timeAddition)
+                        // We have roughly met the requested rewind.
                         if (timeAddition >= (transcriptRewindSeconds.current * 1000)){
                             delayedPosition.current = i
                             break
@@ -267,7 +294,6 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                     }
                     // If time addition never met the rewind amount, then we must have hit the start of the rewind
                     if (timeAddition < (transcriptRewindSeconds.current * 1000)){delayedPosition.current = 0}
-                    // delayedPosition.current =  Math.round(Math.max(0, delayedPosition.current -= (1000 / 80)))
                 }
                 // TODO : figure out if this break is even needed
                 break
@@ -275,20 +301,22 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         }
         // Don't run if the transcript was interrupted
         if (transcriptInterrupt.current === false) {
-            // Clear the transcript element, post whole transcript to console
+            // Clear the transcript element, post whole transcript to console, reset necessary variables
             transcriptRef.current.innerHTML = ""
             postTextToConsole(delayedTranscript, "")
             delayedPosition.current = 0
             isTranscriptRunning.current = false
-            // Reset transcript interrupt
+        // Transcript was interrupted
         } else {
+            // Reset necessary variables
             transcriptInterrupt.current = false
             isTranscriptRunning.current = false
         }
+        // If we called rewind, then play the transcript again but minus the calculated time
+        // The amount of time to rewind had already been calculated in this final pass.
         if (transcriptRewindSeconds.current !== 0){
-            transcriptOutput(transcriptName)
-            // The amount of time to rewind had already been calculated in this final pass.
             transcriptRewindSeconds.current = 0
+            transcriptOutput(transcriptName)
         }
     }
     return(

@@ -248,6 +248,7 @@ export const Console =
                         </div>
 
                         <div className="terminal-input-line">
+                            {/*TODO : make it so the suggestions dont appear on browsers based on previous input because its ugly.*/}
                             <input type="text" id="console_input_box" className="terminal-input-field" ref={inputRef} onKeyDown={handleEnterKeyDown}/>
                             <button onClick={new_console_input} type="button" id="enter_button">Enter</button>
                         </div>

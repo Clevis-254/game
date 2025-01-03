@@ -9,12 +9,16 @@ import {Console} from "@/Pages/Play/Components/Console/Console.jsx";
 
 export function Play() {
 
+    // Ref used in handling posting from GameLogic.jsx to Console.jsx
     const consoleRef = useRef()
+    // Ref used to allow GameLogic.jsx to edit the transcript printing element in console
     const transcriptRef = useRef()
 
+    // Used in sending commands from Console.jsx to GameLogic.jsx. More info in both files
     const [commandToGameTrigger, setCommandToGameTrigger] = useState(true)
     const consoleToGameCommandRef = useRef("")
 
+    // Links posting from GameLogic.jsx to Console.jsx
     function postGameLogicToConsole (message, speaker) {
         if (consoleRef.current){
             // IDE error as current is defined at runtime, so it does run as intended.
