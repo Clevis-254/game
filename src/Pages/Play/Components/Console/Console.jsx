@@ -150,10 +150,10 @@ export const Console =
                     commandToGame(console_input_text)
                     break
                 default:
+                    // In case it is a direction from the game eg "left" or "right". Pass it on
                     if (console_input_text !== "") {
                         printUserInput()
                         commandToGame(console_input_text)
-                        console.log("Console:Not on the command list")
                     }
             }
 

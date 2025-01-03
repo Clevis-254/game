@@ -20,6 +20,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     // TODO remove all references of this in the code and replace it directly with audioRef.current.playbackRate
     let audioSpeed = useRef(1)
     let transcriptNameRef = useRef("")
+    let audioFinished = useRef(false)
 
     // When the page first loads, create an audio player not attached to the DOM, so it isn't visible.
     useEffect(() => {
@@ -27,6 +28,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         // TODO look into axing this function and event handlers we handle it elsewhere now
         const handleAudioEnd = () => {
             console.log("audio finished")
+            checkStoryBlock()
+            audioFinished.current = true
         }
         audioRef.current.addEventListener("ended", handleAudioEnd)
         // Clean up the listener
@@ -146,6 +149,19 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         // consoleToGameCommandRef = ""
     },[commandToGameTrigger])
 
+    // Will run a resolve on the current await promise being used to block story progress
+    // Only runs if the audio and transcript is finished
+    let storyBlock
+    function checkStoryBlock(){
+        if (storyBlock &&
+            audioFinished.current === true &&
+            delayedPosition.current === 0){
+            audioFinished.current = false
+            storyBlock("storyBlock ran")
+        }
+    }
+
+
     // TODO STAT TRACK : Stop the in game time tracking here
     //  Please note you might need to use useEffect or something of the
     //  sort that will track when the page is left / closed / reloaded
@@ -187,15 +203,15 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             // TODO make these 3 lines a function since it doesn't need to be repeated
             audioRef.current.src = "./src/Audio/Narration/Intro.mp3"
             transcriptOutput("Intro")
-            await audioStart()
+            audioStart()
+            // Block until transcript and audio are done
+            await new Promise(async resolve => {storyBlock=resolve})
             // Forest
             audioRef.current.src = "./src/Audio/Narration/forestIntro.mp3"
             transcriptOutput("forestIntro")
-            // TODO : Make it so that we no longer use audioStart and we use the below 2 lines to block
-            //  until both the audio and transcript is done.
-            // let storyBlock
-            // await new Promise(async (resolve, reject) => {storyBlock=resolve})
-            await audioStart()
+            audioStart()
+            // Block until transcript and audio are done
+            await new Promise(async resolve => {storyBlock=resolve})
             waitingForUserInput.current = "Forest"
             // TODO : integrate tts
             // Slight delay to make sure the transcript is printed.
@@ -308,6 +324,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             postTextToConsole(delayedTranscript, "")
             delayedPosition.current = 0
             isTranscriptRunning.current = false
+            checkStoryBlock()
         // Transcript was interrupted
         } else {
             // Reset necessary variables
