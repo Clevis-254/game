@@ -1,6 +1,7 @@
 import mongoose from 'mongoose'
 
 const _consoleLogHistory = new mongoose.Schema({
+    /// needs to check how it will work with this
     Messages: [{
         MessageID: Number,
         Message: String,
