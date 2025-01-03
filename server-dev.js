@@ -43,7 +43,8 @@ app.use(session({
     }
 }));
 // MongoDB Linking Test Code
-const dbURI = "mongodb://localhost:27017/projectDatabase";
+// const dbURI = "mongodb+srv://demo_user:321@cluster0.dayzc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const dbURI = "mongodb://localhost:27017/projectDatabase"
 
 // Updated MongoDB connection using async/await
 try {
