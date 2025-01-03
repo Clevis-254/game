@@ -19,6 +19,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     let transcriptRewindSeconds = useRef(0)
     // TODO remove all references of this in the code and replace it directly with audioRef.current.playbackRate
     let audioSpeed = useRef(1)
+    let transcriptNameRef = useRef("")
 
     // When the page first loads, create an audio player not attached to the DOM, so it isn't visible.
     useEffect(() => {
@@ -54,8 +55,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     const audioPlay = () => {
         if (audioRef.current) {
             audioRef.current.play();
-            // TODO : TEMP REPLACE HARD CODED + MAKE IT SO PLAY DOESNT RUN THE TRANSCRIPT IF THERES NO AUDIO
-            transcriptOutput("forestIntro")
+            if(transcriptNameRef.current){transcriptOutput(transcriptNameRef.current)}
         }
     }
     const audioPause = () => {
@@ -229,6 +229,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         // TODO : make finding the transcript text its own function so it only gets run when it needs to
         // Find the desired transcript out of the whole list in transcripts.jsx
         let transcriptText
+        // Used for when we use the "play" command
+        transcriptNameRef.current = transcriptName
         for (const [key, value] of Object.entries(transcripts)) {
             if (key === transcriptName) {
                 transcriptText = value
