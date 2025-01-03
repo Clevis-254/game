@@ -1,7 +1,6 @@
 import mongoose from 'mongoose'
 
 const _consoleLogHistory = new mongoose.Schema({
-    /// needs to check how it will work with this
     Messages: [{
         MessageID: Number,
         Message: String,
@@ -11,6 +10,14 @@ const _consoleLogHistory = new mongoose.Schema({
     UserID: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
+    },
+    active: {
+        type: Boolean,
+        default: true
+    },
+    lastClosed: {
+        type: Date,
+        default: null
     }
 });
 // UserID is to link the chat history to the appropriate user

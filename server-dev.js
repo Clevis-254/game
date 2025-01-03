@@ -56,21 +56,29 @@ try {
 }
 // making console so that it can use live data instead
 // Get or create user console if it doesn't exist
+// getUserConsole function
 async function getUserConsole(userId, userType) {
     try {
         if (userType !== 'admin') {
-            let userConsole = await consoleLogHistorySchema.findOne({ 
-                UserID: userId 
-            });
+            console.log(`Attempting to find console for user ID: ${userId}`);
+            let userConsole = await consoleLogHistorySchema.findOne({ UserID: userId });
             
             if (!userConsole) {
+                console.log(`No existing console found, creating new one...`);
                 userConsole = await consoleLogHistorySchema.create({
                     UserID: userId,
-                    Messages: []
+                    Messages: [],
+                    active: true
                 });
-                console.log(`Created new console for user ${userId}`);
+                console.log(`New console created with ID: ${userConsole._id}`);
             } else {
-                console.log(`Loaded existing console for user ${userId}`);
+                // Reactivate existing console
+                await consoleLogHistorySchema.findOneAndUpdate(
+                    { UserID: userId },
+                    { $set: { active: true } }
+                );
+                console.log(`Reactivated console with ID: ${userConsole._id}`);
+                console.log(`Messages count: ${userConsole.Messages.length}`);
             }
             return userConsole;
         }
@@ -241,23 +249,45 @@ app.post('/signup', async (req, res) => {
 // logout route
 app.post('/logout', ensureAuthenticated, async (req, res) => {
     try {
-        // Clear any authenticated user data
+        // Get user ID before destroying session
+        const userId = req.session.user.id;
+        const userType = req.session.user.userType;
+
+        // Clear the console if user is not admin
+        if (userType !== 'admin' && userId) {
+            try {
+                // Update console status to indicate it's closed
+                await consoleLogHistorySchema.findOneAndUpdate(
+                    { UserID: userId },
+                    { 
+                        $set: { 
+                            active: false,
+                            lastClosed: new Date()
+                        } 
+                    }
+                );
+                console.log(`Console closed for user ${userId}`);
+            } catch (error) {
+                console.error('Error closing console:', error);
+            }
+        }
+
+        // Clear session data
         if (req.session) {
-            // Destroy the session
             await new Promise((resolve, reject) => {
                 req.session.destroy((err) => {
                     if (err) reject(err);
                     resolve();
                 });
             });
-            // Clear the session cookie
+
             res.clearCookie('connect.sid', {
                 path: '/',
                 httpOnly: true,
-                secure:false,//to be used in prod process.env.NODE_ENV === 'production',
+                secure: false,
                 sameSite: 'strict'
             });
-            
+
             res.status(200).json({ 
                 success: true,
                 message: 'Logout successful',
