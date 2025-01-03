@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './login.css';
 import { useForm } from 'react-hook-form';
+import {Link} from "react-router-dom";
 
 export const Login = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
@@ -92,7 +93,9 @@ const formSubmit = handleSubmit((data, e) => {
                 </button>
               </form>
               <div className="text-center mt-3">
-                <a href="/signup" className="signup-link">Create an account or sign up now!</a>
+                <Link to="/signup" className="signup-link">
+                  Create an account or sign up now!
+                </Link>
               </div>
             </div>
           </div>
