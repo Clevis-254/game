@@ -1,6 +1,10 @@
-import {useState, useRef, useEffect} from 'react'
+import {useRef, useEffect} from 'react'
 import transcripts from "../Audio/Narration/transcripts.jsx";
 
+
+// TODO STAT TRACKING : Please keep in mind the project brief encourages us to use any additional statistics
+//  that we think might be valuable to the client so think of extras and implement some of the (optional)
+//  ones I have marked that aren't directly project brief related.
 export function GameLogic({ postTextToConsole, transcriptRef,
                               commandToGameTrigger, setCommandToGameTrigger, consoleToGameCommandRef}) {
 
@@ -29,6 +33,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
     const audioStart = async () => {
         return new Promise((resolve) => {
+            // TODO STAT TRACK : (Optional) Could at the end of an audio add its length
+            //  + any extra time from rewinding to a "total audio time" stat
             const onAudioEnd = () => {
                 audioRef.current.removeEventListener('ended', onAudioEnd)
                 resolve()
@@ -75,8 +81,6 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         }
     }
 
-    let audioSourceURL = ""
-
     // useEffect to get commands from the console to gameLogic
     // Uses a state variable to trigger this function, then uses a ref to change the value again
     // without re-rendering. Uses isInitialRenderConsoleToGame so it doesn't run on initial render
@@ -86,6 +90,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             isInitialRenderConsoleToGame.current = false
             return
         }
+        // TODO STAT TRACK : Don't do the tracking of commands here, do it in Console.jsx as not
+        //  all commands are passed to this component.
         switch (consoleToGameCommandRef.current) {
             case "start game":
                 startGame()
@@ -114,6 +120,9 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                 break
             // TODO : consider setting the command ref to blank to prevent double commands on re-renders
             default:
+                // TODO STAT TRACK : waitingForUserInput will match the current choice point, any
+                //  thing added in this switch will need to be tracked. More to be added in the next
+                //  game feature branch.
                 // Used for in game path branching
                 switch (waitingForUserInput.current){
                     case "Forest":
@@ -126,9 +135,16 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                         console.log("GameLogic:Not a command match")
                 }
         }
+        // TODO : Uncomment out this line and see if it doesn't break anything, should stop repeat commands
+        //  as was initally intended in designing commandToGame
+        // consoleToGameCommandRef = ""
     },[commandToGameTrigger])
 
-    // Resets all possible variables it can.
+    // TODO STAT TRACK : Stop the in game time tracking here
+    //  Please note you might need to use useEffect or something of the
+    //  sort that will track when the page is left / closed / reloaded
+    //  by the user to stop the timer as well
+    // Resets all possible variables it can and stops/restarts the game
     async function endGame(restart){
         if (cancel) cancel("Ended Game")
         audioPause()
@@ -145,8 +161,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         }
     }
 
+    // TODO STAT TRACK : Add in-game tracking time here.
     let gameStarted = useRef(false)
-
     let cancel
     async function startGame() {
         // Prevents this from running multiple times
@@ -158,6 +174,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         await new Promise(async (resolve, reject) => {
             cancel = reject;
             // Intro
+            // TODO STAT TRACK : Number of audio files played here and other similar code blocks
+            // TODO make these 3 lines a function since it doesn't need to be repeated
             audioRef.current.src = "./src/Audio/Narration/Intro.mp3"
             transcriptOutput("Intro")
             await audioStart()
@@ -173,6 +191,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         })
     }
 
+    // TODO STAT TRACK : Alternative place(s) to put the heatmap data instead of the switch, I
+    //  would personally recommend the switch to keep code cleaner and keep heatmap tracking code bundled
     // TODO : Develop on next issue
     async function forestLeft(){
         postTextToConsole("You picked 'left'", "")

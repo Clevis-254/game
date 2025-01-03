@@ -65,7 +65,7 @@ export const Console =
         // State Var holding all client side console text
         const [consoleText, setConsoleText] = useState([])
 
-        // TODO : Potentially replace with useEffect (might not matter since its only changed once)
+        // TODO : Potentially replace with useEffect or a ref (might not matter since its only changed once)
         // Used to check if the history has been loaded yet upon first visit
         const [historyLoaded, setHistoryLoaded] = useState(false)
 
@@ -78,6 +78,9 @@ export const Console =
             }
         }
 
+
+        // TODO STAT TRACK : Number of commands sent in by user, however note when implementing we dont want
+        //  to track when the user doesn't input anything which is handled at the very bottom in the default case.
         // Function to add a user console input client side
         function new_console_input(){
 
@@ -90,6 +93,8 @@ export const Console =
             const console_input_text = console_input_box.value
             console_input_box.value = ""
 
+            // TODO STAT TRACK : Number of times a command is called can be done here. For the case stack at the bottom
+            //  just add the line(s) to track below but dont add a break so it still falls through.
             switch (console_input_text) {
                 case "clear":
                     setConsoleText([...consoleText, ("Console : Clearing Console now...")])
@@ -124,6 +129,8 @@ export const Console =
                 case "pause":
                 case "speed up":
                 case "slow down":
+                    // TODO STAT TRACK : If I implement rewinding for custom seconds (unlikely) then potentially add the total
+                    //  seconds rewound as a stat.
                     // TODO : make it so rewind can be "rewind x" for x seconds. Might need to pre-process or use an IF for this.
                 case "rewind":
                 case "end game":
@@ -139,14 +146,15 @@ export const Console =
                     }
             }
 
-            // Print the user input to console
             // TODO : Probably could remove this and just replace it with the new post_new_input method
+            // Print the user input to console
             function printUserInput(){
                 setConsoleText([...consoleText, ("User : " + console_input_text)])
                 post_new_input(console_input_text, "User")
             }
         }
 
+        // TODO STAT TRACK : Total messages sent to the console per user and overall
         // POST to db the new message
         function post_new_input(message, speaker) {
             fetch('/post_console_history', {
@@ -192,6 +200,7 @@ export const Console =
             }
         }
 
+        // TODO : Check if this is even needed anymore.
         if(historyLoaded === false){
             fetchConsoleHistory()
             setHistoryLoaded(true)
