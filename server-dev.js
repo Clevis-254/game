@@ -424,19 +424,20 @@ app.get('/reset-password', async (req, res) => {
         console.log("Reset Password GET Request Received");
 
         // Extract token from query params
-        const token = req.query.token;
+        let token = req.query.token;
+
         if (!token) {
             console.error("No token provided in the request");
             return res.status(400).send('Invalid request. No token provided.');
         }
-        console.log("Token:", token);
 
-        // Render the React app
-        const template = fs.readFileSync('index.html', 'utf-8');
+
+        const url = req.originalUrl;
+        const template = await vite.transformIndexHtml(url, fs.readFileSync('index.html', 'utf-8'));
+        // Render React on the server side
         const { render } = await vite.ssrLoadModule('/src/entry-server.jsx');
-        const appHtml = render(req.originalUrl); // No changes to appHtml generation
-
-        const html = template.replace('<!--outlet-->', appHtml);
+        // Put the rendered React into the index file, then React is rendered on the client side when it
+        const html = template.replace(`<!--outlet-->`, `${render(url)}`);
         res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
     } catch (error) {
         console.error('Error rendering /reset-password:', error);
