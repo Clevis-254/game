@@ -33,6 +33,12 @@ const userSchema = new mongoose.Schema({
         enum: ['user', 'admin'],  // Only allows 'user' or 'admin'
         default: 'user',          // Default value is 'user'
     },
+    resetToken: {
+        type: String,  // Store the reset token
+    },
+    resetTokenExpiration: {
+        type: Date,  // Store the expiration date/time of the reset token
+    },
 });
 
 // Add pre-save middleware to hash password

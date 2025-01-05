@@ -229,6 +229,11 @@ app.post('/forgot-password', async (req, res) => {
         user.resetTokenExpiration = Date.now() + 3600000; // 1 hour
         await user.save();
 
+        console.log('Token and expiration saved:', {
+            token: user.resetToken,
+            expiration: user.resetTokenExpiration,
+        });
+
         // Send reset link via email
         const transporter = nodemailer.createTransport({
             service: 'gmail',
@@ -282,12 +287,17 @@ app.post('/reset-password', async (req, res) => {
         // Log user details for verification
         console.log("User found:", user);
 
-        // Encrypt the new password
+        // Hash the new password
         const hashedPassword = await bcrypt.hash(password, 10);
-        user.Password = hashedPassword;
-        user.resetToken = undefined; // Clear the reset token
-        user.resetTokenExpiration = undefined; // Clear the expiration time
-        await user.save();
+
+        // Update the user's password and remove the reset token
+        await User.updateOne(
+            { _id: user._id },
+            {
+                $set: { Password: hashedPassword },
+                $unset: { resetToken: "", resetTokenExpiration: "" },
+            }
+        );
 
         console.log("Password updated successfully");
         res.json({ message: "Password has been reset successfully. Redirecting to login...", redirect: "/login" });
