@@ -24,6 +24,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     let audioSpeed = useRef(1)
     let transcriptNameRef = useRef("")
     let audioFinished = useRef(false)
+    // Lets the game know what to do post fight
+    let opponent = useRef(0)
 
     // When the page first loads, create an audio player not attached to the DOM, so it isn't visible.
     useEffect(() => {
@@ -97,6 +99,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     // without re-rendering. Uses isInitialRenderConsoleToGame so it doesn't run on initial render
     const isInitialRenderConsoleToGame = useRef(true);
     useEffect(() => {
+        console.log(`commandRef thing ran with command ${consoleToGameCommandRef.current}`)
         if (isInitialRenderConsoleToGame.current) {
             isInitialRenderConsoleToGame.current = false
             return
@@ -106,7 +109,9 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         // Check the incoming command
         switch (consoleToGameCommandRef.current) {
             case "start game":
-                startGame()
+                // startGame(
+                // TODO : Swap when done with development
+                debugGame()
                 break
             case "play":
                 audioPlay()
@@ -135,19 +140,36 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                 //  thing added in this switch will need to be tracked. More to be added in the next
                 //  game feature branch.
                 // Used for in game path branching
+                // Dont run if the input is blank (from re-rendering)
+            if (consoleToGameCommandRef !==""){
                 switch (waitingForUserInput.current){
                     case "Forest":
                         if (consoleToGameCommandRef.current === "left"){forestLeft()}
                         else if (consoleToGameCommandRef.current === "right"){forestRight()}
                         // TODO : integrate tts
-                        else {postTextToConsole(`Please pick either "left" or "right"`)}
+                        else {postTextToConsole(`Please pick either "left" or "right"`, "")}
                         waitingForUserInput.current = ""
+                        break
+                    case "Combat":
+                        switch (consoleToGameCommandRef.current){
+                            case "slash":
+                            case "stab":
+                            case "parry slash":
+                            case "parry stab":
+                                combatMove(consoleToGameCommandRef.current)
+                                break
+                            default:
+                                postTextToConsole("Not a valid move. Use help combat to learn more", "")
+                                break
+                        }
+                        postTextToConsole("Pick your move!", "")
                         break
                     default:
                         console.log("GameLogic:Not a command match")
                 }
+            }
         }
-        consoleToGameCommandRef = ""
+        consoleToGameCommandRef.current = ""
     },[commandToGameTrigger])
 
     // Will run a resolve on the current await promise being used to block story progress
@@ -178,6 +200,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         delayedPosition.current = 0
         if(restart){
             postTextToConsole("Starting game from the beginning.", "Console")
+            transcriptInterrupt.current = false
             startGame()
         } else {
             postTextToConsole("Game session ended.", "Console")
@@ -189,6 +212,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     // Cancel holds the reject function of the promise. This allows us to cancel the function
     // from anywhere else in the code.
     let cancelGame
+
     async function startGame() {
         // Prevents this from running multiple times
         if (gameStarted.current === true){
@@ -222,17 +246,242 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         })
     }
 
+
+    // Used whilst debugging as a "startGame" replacement so we can start where we want
+    async function debugGame(){
+        await new Promise(async (resolve, reject) => {
+            cancelGame = reject;
+            postTextToConsole("debug game started", "")
+
+            // First fight
+            opponent.current = 1
+            startCombat()
+            resolve()
+        })
+    }
+
+    function riddle(){
+        console.log("we riddlin'")
+    }
+
     // TODO STAT TRACK : Alternative place(s) to put the heatmap data instead of the switch, I
     //  would personally recommend the switch to keep code cleaner and keep heatmap tracking code bundled
     // TODO : Develop on next issue
-    // Picked left on forest branching choice
+    // Picked left on forest branching choice (fight)
     async function forestLeft(){
         postTextToConsole("You picked 'left'", "")
+        await new Promise(async (resolve, reject) => {
+            cancelGame = reject
+
+            resolve()
+        })
     }
     // TODO : Develop on next issue
-    // Picked right on forest branching choice
+    // Picked right on forest branching choice (deal with trap)
     async function forestRight(){
         postTextToConsole("You picked 'right'", "")
+        await new Promise(async (resolve, reject) => {
+            cancelGame = reject
+
+            resolve()
+        })
+    }
+
+
+    async function startCombat(){
+        await new Promise(async (resolve, reject) => {
+            // TODO CHECK IF THIS WORKS
+            cancelGame = reject
+
+            // TODO : Check if removing the second quotes for no speaker actually has an effect
+            postTextToConsole("You have entered battle!", "")
+            postTextToConsole("Use the help combat command to learn about combat", "")
+            playerHealth.current = 100
+            enemyHealth.current = 100
+            firstTurn.current = true
+            waitingForUserInput.current = "Combat"
+            postTextToConsole("Pick your first move!", "")
+            resolve()
+        })
+    }
+
+    let playerHealth = useRef(100)
+    let enemyHealth = useRef(100)
+    // 0 = No one stunned. 1 = Player stunned. 2 = Enemy stunned
+    let stunned = useRef(0)
+    let playerChargingStab = useRef(false)
+    let enemyChargingStab = useRef(false)
+    const cTextPlayerParrySuccess = "You predicted the enemy and parried their attack!"
+    const cTextEnemyParrySuccess = "The enemy predicted you and parried your attack!"
+    const cTextPlayerStunned = "You are stunned for the next turn!"
+    const cTextEnemyStunned = "The enemy is stunned for the next turn!"
+    const cTextEnemySlash = "The enemy slashes his sword towards you!"
+    const cTextEnemyStab = "The enemy stabs his sword towards you!"
+    const cTextPlayerStabCharge = "You pull back your sword and strengthen your stance in " +
+        "preparation to stab your opponent next turn!"
+    const cTextEnemyStabCharge = "The enemy pulls his sword back and strengthens his stance in " +
+        "preparation to stab you next turn!"
+    const cTextEnemyParrySlash = "The enemy used parry slash!"
+    const cTextEnemyParryStab = "The enemy used parry stab!"
+
+    let firstTurn = useRef(true)
+    function combatMove(movePicked){
+
+        // Run enemy move AI
+        const enemyMovePicked = enemyMoveAI()
+        // Stun logic already handled. Resetting it here so the AI can take advantage of you being stunned
+        if(stunned.current === 1){stunned.current = 0}
+        console.log(`enemy move picked ${enemyMovePicked}`)
+
+        // Enemy parry logic
+        // Enemy parried slash
+        if(movePicked === "slash" &&  enemyMovePicked === "parry slash"){
+            // If the player swapped from charging stab and go parried, stun them
+            if(playerChargingStab.current){
+                stunned.current = 1
+                postTextToConsole(cTextEnemyParrySuccess, "")
+                postTextToConsole(cTextPlayerStunned, "")
+                // TODO refactor this with stunned only being for the enemy
+                // If the player is stunned automatically do the next move
+                postTextToConsole("You were stunned and so your move was skipped!", "")
+                combatMove("")
+                return
+            } else {
+                postTextToConsole(cTextEnemyParrySuccess, "")
+                return
+            }
+        // Enemy parried stab
+        } else if (movePicked === "stab" && enemyMovePicked === "parry stab" && playerChargingStab.current){
+            stunned.current = 1
+            playerChargingStab.current = false
+            postTextToConsole(cTextEnemyParrySuccess, "")
+            postTextToConsole(cTextPlayerStunned, "")
+            // TODO refactor this with stunned only being for the enemy since its not needed now for the player
+            // If the player is stunned automatically do the next move
+            postTextToConsole("You were stunned and so your move was skipped!", "")
+            combatMove("")
+            return
+        }
+
+        // Player parry logic
+        // Player parried slash
+        if(movePicked === "parry slash" &&  enemyMovePicked === "slash"){
+            // If the player swapped from charging stab and go parried, stun them
+            if(enemyChargingStab.current){
+                stunned.current = 2
+                postTextToConsole(cTextPlayerParrySuccess, "")
+                postTextToConsole(cTextEnemyStunned, "")
+                return
+            } else {
+                postTextToConsole(cTextPlayerParrySuccess, "")
+                return
+            }
+            // Player parried stab
+        } else if (movePicked === "parry stab" && enemyMovePicked === "stab" && enemyChargingStab.current === true){
+            stunned.current = 2
+            enemyChargingStab.current = false
+            postTextToConsole(cTextPlayerParrySuccess, "")
+            postTextToConsole(cTextEnemyStunned, "")
+            return
+        }
+        // If they didn't pick stab a second time, wipe their stab status
+        if(movePicked !== "stab"){playerChargingStab.current = false}
+        if(enemyMovePicked !== "stab"){enemyChargingStab.current = false}
+
+        let damage = 0
+        // Handle player move
+        if(movePicked === "slash"){damage = 30; playerChargingStab.current = false}
+        else if (movePicked === "stab" && playerChargingStab.current === true){damage = 70; playerChargingStab.current = false}
+        else if (movePicked === "stab"){postTextToConsole(cTextPlayerStabCharge, ""); playerChargingStab.current = true}
+        let damageMessage = ` and did ${damage} damage`
+
+        // Don't run when the player is charging
+        if(!playerChargingStab.current && movePicked !== ""){postTextToConsole(`You picked ${movePicked}${damageMessage}!`, "")}
+        enemyHealth.current -= damage
+
+        // If the enemy has been killed
+        if (enemyHealth.current <= 0){
+            waitingForUserInput.current = ""
+            postTextToConsole("You killed your foe and won the fight!", "")
+            // Only two opponents in the game so 1 = Forest, 2 = Ending
+            // TODO implement ending
+            if (opponent.current === 1){
+                riddle()
+            } else if (opponent.current === 2) {
+
+            }
+            return
+        }
+
+        // Handle enemy move
+        damage = 0
+        if(enemyMovePicked === "slash"){damage = 30; enemyChargingStab.current = false}
+        else if (enemyMovePicked === "stab" && enemyChargingStab.current === true){damage = 70; enemyChargingStab.current = false}
+        else if (enemyMovePicked === "stab"){postTextToConsole(cTextEnemyStabCharge, ""); enemyChargingStab.current = true}
+        damageMessage = ` and did ${damage} damage`
+
+        // Don't run when enemy is charging
+        if(!enemyChargingStab.current && stunned.current !== 2){postTextToConsole(`The enemy picked ${enemyMovePicked}${damageMessage}!`, "")}
+        playerHealth.current -= damage
+
+        // If the player has been killed
+        if (playerHealth.current <= 0){
+            postTextToConsole("You have been killed and lost the fight. Game over.", "")
+            waitingForUserInput.current = ""
+            endGame(true)
+            return
+        }
+        if(stunned.current === 2){postTextToConsole("The enemy was stunned and so their move was skipped!", ""); stunned.current = 0}
+
+        // Remaining health
+        postTextToConsole(`You have ${playerHealth.current} health remaining and the enemy has ${enemyHealth.current} remaining!`, "")
+    }
+
+    function enemyMoveAI(){
+        // If it's the first move, pick randomly (except parry stab since it won't be turn 1 charged)
+        if(firstTurn.current){
+            firstTurn.current = false
+            console.log("ENEMY AI : first turn")
+            return randomMove(1, 3)
+        }
+        // If the enemy is stunned, don't return a move
+        if (stunned.current === 2){
+            console.log("ENEMY AI : enemy stunned")
+            return ""
+        }
+        // If you are charging a stab, he will always pick one of the two parries
+        else if(playerChargingStab.current){
+            console.log("ENEMY AI : player charging stab")
+            return randomMove(3, 4)
+        }
+        // If he is charging (and you aren't) then he will either stab or slash
+        else if (enemyChargingStab.current){
+            console.log("ENEMY AI : enemy charging stab")
+            return randomMove(1,2)
+        }
+        // If you are stunned, he will always slash to take advantage
+        else if (stunned.current === 1){
+            console.log("ENEMY AI : player stunned")
+            return "slash"
+        }
+        // If none of the above, pick randomly (except parry stab as it can't be charging)
+        console.log("ENEMY AI : no match. Random move")
+        return randomMove(1,4)
+        function randomMove(min, max){
+            // Pick a random number between min-max
+            // 1 = Slash, 2 = Stab, 3 = Parry Slash, 4 = Parry Stab
+            const enemyMoveNum = Math.floor(Math.random() * (max - min + 1)) + min
+            switch (enemyMoveNum){
+                case 1:
+                    return "slash"
+                case 2:
+                    return "stab"
+                case 3:
+                    return "parry slash"
+                case 4:
+                    return "parry stab"
+            }
+        }
     }
 
     // TODO : Perhaps add another symbol to the transcripts to make a new paragraph
