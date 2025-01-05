@@ -20,11 +20,6 @@ export function Story() {
           </div>
         </div>
       </div>
-
-      <div className="d-flex justify-content-center gap-3">
-        <Console/>
-      </div>
-      
     </div>
   );
 }

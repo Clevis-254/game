@@ -20,6 +20,7 @@
 
 .terminal-output {
     margin-bottom: 20px;
+    overflow-y: scroll;
 }
 
 .terminal-line {
