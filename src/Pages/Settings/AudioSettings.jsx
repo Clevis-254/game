@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import debounce from 'lodash.debounce'; // Import lodash.debounce
 import {
   setUserAudioPreferences,
+  getEqualizerSettings,
 } from "../../utility/Audio.jsx";
 
 export default function AudioSettings() {
@@ -18,15 +20,32 @@ export default function AudioSettings() {
     parseFloat(localStorage.getItem('musicVolume')) || 1.0
   );
 
+  // State variables for equalizer settings
+  const [equalizerSettings, setEqualizerSettings] = useState(getEqualizerSettings());
+
+  // Debounced function to update user preferences
+  const debouncedSetUserAudioPreferences = useCallback(
+    debounce((preferences) => {
+      setUserAudioPreferences(preferences);
+    }, 300), // 300ms debounce delay; adjust as needed
+    []
+  );
+
   // Update user preferences whenever a setting changes
   useEffect(() => {
-    setUserAudioPreferences({
+    debouncedSetUserAudioPreferences({
       masterVolume: masterVolume,
       soundEffectVolume: soundEffectVolume,
       voiceDialogueVolume: voiceDialogueVolume,
       musicVolume: musicVolume,
+      equalizerSettings: equalizerSettings,
     });
-  }, [masterVolume, soundEffectVolume, voiceDialogueVolume, musicVolume]);
+
+    // Cleanup function to cancel debounce on unmount
+    return () => {
+      debouncedSetUserAudioPreferences.cancel();
+    };
+  }, [masterVolume, soundEffectVolume, voiceDialogueVolume, musicVolume, equalizerSettings, debouncedSetUserAudioPreferences]);
 
   return (
     <div className="card mb-6 p-4 border border-gray-200 rounded-md shadow-sm">
@@ -97,6 +116,60 @@ export default function AudioSettings() {
             step="0.01"
             value={musicVolume}
             onChange={(e) => setMusicVolume(parseFloat(e.target.value))}
+            className="form-range"
+          />
+        </div>
+
+        {/* Equalizer Settings */}
+        <h2 className="card-title text-xl font-semibold mb-4">Equalizer Settings</h2>
+
+        {/* Bass */}
+        <div className="form-group mb-4">
+          <label className="form-label" htmlFor="bassRange">
+            Bass (60Hz): {equalizerSettings.bass.toFixed(1)} dB (decibels)
+          </label>
+          <input
+            id="bassRange"
+            type="range"
+            min="-12"
+            max="12"
+            step="0.1"
+            value={equalizerSettings.bass}
+            onChange={(e) => setEqualizerSettings({ ...equalizerSettings, bass: parseFloat(e.target.value) })}
+            className="form-range"
+          />
+        </div>
+
+        {/* Mid */}
+        <div className="form-group mb-4">
+          <label className="form-label" htmlFor="midRange">
+            Mid (1kHz): {equalizerSettings.mid.toFixed(1)} dB (decibels)
+          </label>
+          <input
+            id="midRange"
+            type="range"
+            min="-12"
+            max="12"
+            step="0.1"
+            value={equalizerSettings.mid}
+            onChange={(e) => setEqualizerSettings({ ...equalizerSettings, mid: parseFloat(e.target.value) })}
+            className="form-range"
+          />
+        </div>
+
+        {/* Treble */}
+        <div className="form-group mb-4">
+          <label className="form-label" htmlFor="trebleRange">
+            Treble (10kHz): {equalizerSettings.treble.toFixed(1)} dB (decibels)
+          </label>
+          <input
+            id="trebleRange"
+            type="range"
+            min="-12"
+            max="12"
+            step="0.1"
+            value={equalizerSettings.treble}
+            onChange={(e) => setEqualizerSettings({ ...equalizerSettings, treble: parseFloat(e.target.value) })}
             className="form-range"
           />
         </div>
