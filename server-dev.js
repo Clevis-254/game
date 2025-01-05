@@ -225,6 +225,7 @@ app.get("/get_console_history", async (req, res) => {
     console.log("GET /get_console_history called")
     try {
         // TODO : integrate with the login system to get the correct userID
+        // TODO : update it to be findOne, then update Console.jsx code too
         const consoleHistory = await consoleLogHistorySchema.find({"UserID" : 0})
         res.json(consoleHistory)
 
