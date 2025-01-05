@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 export function Banner(){
     return(
@@ -22,19 +23,16 @@ export function Banner(){
                 <div className="navbar-collapse collapse show" id="navbarsExample07">
                   <ul className="navbar-nav mr-auto">
                     <li className="nav-item">
-                      <a className="nav-link" href="/play">
-                        Play
-                      </a>
+                    <Link className="nav-link" to="/play">Play</Link>
                     </li>
                     <li className="nav-item">
-                      <a className="nav-link" href="/my-stats">
-                        My Stats
-                      </a>
+                    <Link className="nav-link" to="/my-stats">My Stats</Link>
                     </li>
                     <li className="nav-item">
-                      <a className="nav-link" href="/user-stats">
-                        User Stats
-                      </a>
+                    <Link className="nav-link" to="/user-stats">User Stats</Link>
+                    </li>
+                    <li className="nav-item">
+                    <Link className="nav-link" to="/settings">Settings</Link>
                     </li>
                   </ul>
                 </div>

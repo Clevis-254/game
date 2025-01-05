@@ -5,6 +5,7 @@ import UserStats from "./Pages/UserStats/UserStats.jsx";
 import MyStats from "./Pages/MyStats/MyStats.jsx";
 import Login from "@/Pages/Login/login.jsx";
 import SignUp from "@/SignUp/SignUp.jsx";
+import SettingsPage from "./Pages/Settings/SettingsPage.jsx";
 
 
 const App = () => {
@@ -15,6 +16,7 @@ const App = () => {
             <Route path="/user-stats" element={<UserStats />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
+            <Route path="/settings" element={<SettingsPage />} />
         </Routes>
     )
 }
