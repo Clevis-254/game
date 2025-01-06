@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 export function Banner() {
   const handleLogout = async () => {
@@ -52,6 +53,11 @@ export function Banner() {
             <li className="nav-item">
               <a className="nav-link" href="/user-stats">
                 User Stats
+              </a>
+            </li>
+            <li className="nav-item">
+              <a className="nav-link" href="/settings">
+                Settings 
               </a>
             </li>
           </ul>
