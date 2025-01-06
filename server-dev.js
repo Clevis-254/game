@@ -92,6 +92,67 @@ async function getUserConsole(userId, userType) {
         throw error;
     }
 }
+
+async function getStatTracker(userId, userType) {
+    try {
+        if (userType !== 'admin') {
+            console.log(`Attempting to find stat tracker for user ID: ${userId}`);
+            let statTracker = await UserStats.findOne({ UserID: userId });
+
+            if (!statTracker) {
+                console.log(`No existing stat tracker, creating new one...`);
+                statTracker = await UserStats.create({
+                    user: userId,
+                    timePlayed: 0,
+                    choseLeft: 0,
+                    choseRight: 0,
+                    numberOfDeaths: 0,
+                    riddleGuesses: {
+                        correct: 0,
+                        incorrect: 0,
+                    },
+                    audioFiles: {
+                        hit: 0,
+                        miss: 0,
+                        stamina: 0,
+                        damaged: 0,
+                        eating: 0,
+                        death: 0,
+                    },
+                    commands: {
+                        startGame: 0,
+                        pause: 0,
+                        repeat: 0,
+                        endGame: 0,
+                        speedUp: 0,
+                        slowDown: 0,
+                        restart: 0,
+                        clear: 0,
+                        rewind: 0,
+                        help: 0,
+                    },
+                    heatmap: {
+                        forestObstacle: 0,
+                        forestFight: 0,
+                        riddle: 0,
+                        boss: 0,
+                    },
+                });
+                console.log(`New stat tracker created with ID: ${userConsole._id}`);
+            } else {
+                console.log(`Stats entry found for user ID: ${userId}`);
+            }
+
+            return userStats;
+        }
+        console.log(`No stats for role "${userRole}" necessary.`);
+        return null;
+    } catch (error) {
+        console.error(`Error managing user stats: ${error.message}`);
+        throw error;
+    }
+}
+
 // user samples 
 async function save() {
     try {
@@ -180,16 +241,10 @@ app.post("/login", express.json(), async (req, res) => {
         if (user.UserType !== 'admin') {
             await getUserConsole(user._id, user.UserType);
 
-            // Check if stats already exist for this user
-            let stats = await UserStats.findOne({ user: user._id });
-
-            if (!stats) {
-              // Create stat tracker for the user if they don't have one
-              stats = new UserStats({ user: user._id });
-              await stats.save();
-            }
+            await getStatTracker(user._id, user.UserType);
         }
         console.log('console loaded');
+        console.log('Stat tracker loaded');
 
         // assigning sessions to the user while allowing them to login 
         req.session.user = {
@@ -237,7 +292,9 @@ app.post('/signup', async (req, res) => {
         await getUserConsole(user._id, user.UserType);
         console.log('console created');
 
-        // TODO STATS Create stat tracker for new user
+        // Creates stat tracker for new user
+        await getStatTracker(user._id, user.UserType);
+        console.log('Stat tracker created');
 
         // Set up session for new user
         req.session.user = {
