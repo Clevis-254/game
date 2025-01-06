@@ -65,6 +65,7 @@ function applyEqualizer(audio, equalizerSettings) {
     activeAudioElements.delete(audio);
   };
 
+  // Listen for audio end, pause, or error events
   audio.addEventListener('ended', cleanup);
   audio.addEventListener('pause', cleanup);
   audio.addEventListener('error', cleanup);
@@ -183,6 +184,7 @@ export function setUserAudioPreferences({ masterVolume, soundEffectVolume, voice
 // Get equalizer settings
 export function getEqualizerSettings() {
   try {
+    // Retrieve stored equalizer settings or use default values
     const storedEqualizerSettings = localStorage.getItem('equalizerSettings');
     return storedEqualizerSettings
       ? JSON.parse(storedEqualizerSettings)
