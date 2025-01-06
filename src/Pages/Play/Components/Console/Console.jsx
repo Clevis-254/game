@@ -32,6 +32,12 @@ export const Console =
 
         const transcriptContainerRef = useRef(null)
 
+        // Runs when the page first loads to initially get the history
+        useEffect(() => {
+            fetchConsoleHistory()
+        }, [])
+
+
         const handleEnterKeyDown = (event) => {
             if (event.key === 'Enter') {
                 new_console_input()
@@ -79,10 +85,6 @@ export const Console =
         useEffect(() => {
             scrollConsoleToBottom()
         }, [consoleText])
-
-        // TODO : Potentially replace with useEffect or a ref (might not matter since its only changed once)
-        // Used to check if the history has been loaded yet upon first visit
-        const [historyLoaded, setHistoryLoaded] = useState(false)
 
         function commandToGame(command){
             consoleToGameCommandRef.current = command
@@ -136,7 +138,7 @@ export const Console =
                         "- 'rewind' : Rewind 10 seconds of dialogue"
                     ]
                     for (let i in outputList) {
-                        setConsoleText([...consoleText, `Console : ${outputList[i]}`])
+                        setConsoleText((prevConsoleText) =>[...prevConsoleText, `Console : ${outputList[i]}`])
                         post_new_input(outputList[i], "Console")
                     }
                     break
@@ -186,7 +188,6 @@ export const Console =
                     Speaker: speaker
                 })
             });
-            fetchConsoleHistory()
         }
 
         // POST to clear console history in the db
@@ -216,12 +217,6 @@ export const Console =
             } catch (error) {
                 console.error('Error fetching console history:', error);
             }
-        }
-
-        // TODO : Check if this is even needed anymore.
-        if(historyLoaded === false){
-            fetchConsoleHistory()
-            setHistoryLoaded(true)
         }
 
         // TODO : Make it so if the user tries scrolling up then it wont force you to the bottom. Aka if
