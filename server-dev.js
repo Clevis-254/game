@@ -436,6 +436,8 @@ app.post('/logout', ensureAuthenticated, async (req, res) => {
             }
         }
 
+        // TODO Clear stat tracker?
+
         // Clear session data
         if (req.session) {
             await new Promise((resolve, reject) => {
@@ -512,20 +514,17 @@ app.post("/post_console_history",ensureAuthenticated ,async (req, res) => {
 app.get('/user/stats', ensureAuthenticated, async (req, res) => {
     try {
         const userId = req.session.user.id;
-        const stats = await Stats.findOne({ user: userId });
+        const stats = await UserStats.findOne({ user: userId });
 
         if (!stats) {
-            // Create stat tracker for the user if they don't have one
-            stats = new Stats({ user: userId });
-            await stats.save();
+            return res.status(404).send('Stat tracker not found');
         }
-
-        console.log(stats);
 
         res.status(200).json({stats});
 
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('Error posting to stat tracker : ', error);
+        res.status(500).send('Internal Server Error');
     }
 });
 

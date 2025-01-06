@@ -1,5 +1,6 @@
 import {useRef, useEffect} from 'react'
 import transcripts from "../Audio/Narration/transcripts.jsx";
+import UserStats from "./models/UserStats.js";
 
 
 // TODO STAT TRACKING : Please keep in mind the project brief encourages us to use any additional statistics
@@ -24,6 +25,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     let audioSpeed = useRef(1)
     let transcriptNameRef = useRef("")
     let audioFinished = useRef(false)
+
+    // TODO STAT TRACK: Add variables here.
 
     // When the page first loads, create an audio player not attached to the DOM, so it isn't visible.
     useEffect(() => {
