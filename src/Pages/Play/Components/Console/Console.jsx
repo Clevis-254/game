@@ -114,18 +114,17 @@ export const Console =
             //  just add the line(s) to track below but dont add a break so it still falls through.
             switch (console_input_text) {
                 case "clear":
+                    // User should never see this theoretically, but it's here just in case
                     setConsoleText([...consoleText, ("Console : Clearing Console now...")])
                     clear_console_history()
                     break
                 case "start game":
-                    printUserInput()
-                    const consoleResponse = "Starting game now..."
-                    setConsoleText([...consoleText, `Console : ${consoleResponse}`])
+                    post_new_input(console_input_text, "User")
                     commandToGame(console_input_text)
-                    post_new_input(consoleResponse, "Console")
+                    post_new_input("Starting game now...", "Console")
                     break
                 case "help":
-                    printUserInput()
+                    post_new_input(console_input_text, "User")
                     const outputList = ["Here is a list of all current commands",
                         "- 'start game' : Starts the game from the last saved point",
                         "- 'end game' : Ends the game session",
@@ -138,7 +137,6 @@ export const Console =
                         "- 'rewind' : Rewind 10 seconds of dialogue"
                     ]
                     for (let i in outputList) {
-                        setConsoleText((prevConsoleText) =>[...prevConsoleText, `Console : ${outputList[i]}`])
                         post_new_input(outputList[i], "Console")
                     }
                     break
@@ -152,22 +150,15 @@ export const Console =
                 case "rewind":
                 case "end game":
                 case "restart":
-                    printUserInput()
+                    post_new_input(console_input_text, "User")
                     commandToGame(console_input_text)
                     break
                 default:
                     // In case it is a direction from the game eg "left" or "right". Pass it on
                     if (console_input_text !== "") {
-                        printUserInput()
+                        post_new_input(console_input_text, "User")
                         commandToGame(console_input_text)
                     }
-            }
-
-            // TODO : Probably could remove this and just replace it with the new post_new_input method
-            // Print the user input to console
-            function printUserInput() {
-                setConsoleText([...consoleText, ("User : " + console_input_text)])
-                post_new_input(console_input_text, "User")
             }
 
             // TODO : Check if this is needed since we now do a useEffect for consoleText changes
@@ -177,6 +168,11 @@ export const Console =
         // TODO STAT TRACK : Total messages sent to the console per user and overall
         // POST to db the new message
         function post_new_input(message, speaker) {
+            if(speaker !== ""){
+                setConsoleText((prevConsoleText) =>[...prevConsoleText, `${speaker} : ${message}`])
+            } else {
+                setConsoleText((prevConsoleText) =>[...prevConsoleText, `${message}`])
+            }
             fetch('/post_console_history', {
                 method: "POST",
                 headers: {
@@ -192,10 +188,10 @@ export const Console =
 
         // POST to clear console history in the db
         function clear_console_history() {
+            setConsoleText([])
             fetch("/post_clear_console", {
                 method : "POST"
             })
-            setConsoleText([])
         }
 
         // Get the console history from the db
