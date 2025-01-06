@@ -56,9 +56,9 @@ export function Banner() {
               </a>
             </li>
             <li className="nav-item">
-              <a className="nav-link" href="/settings">
-                Settings 
-              </a>
+              <Link className="nav-link" to="/settings">
+                Settings
+              </Link>
             </li>
           </ul>
           <button className="btn btn-link nav-link" onClick={handleLogout}>
