@@ -109,9 +109,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         // Check the incoming command
         switch (consoleToGameCommandRef.current) {
             case "start game":
-                // startGame(
-                // TODO : Swap when done with development
-                debugGame()
+                startGame()
+                // debugGame()
                 break
             case "play":
                 audioPlay()
@@ -164,6 +163,49 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                         }
                         postTextToConsole("Pick your move!", "")
                         break
+                    case "riddleStart":
+                        switch (consoleToGameCommandRef.current){
+                            case "up":
+                            case "right":
+                            case "left":
+                                riddleSearchWrong()
+                                break
+                            case "down":
+                                riddleFound()
+                                break
+                            default:
+                                postTextToConsole("Not a place to search on the wall. Try again", "")
+                        }
+                        break
+                    case "Riddle":
+                        switch (consoleToGameCommandRef.current){
+                            case "door":
+                            case "a door":
+                                riddleDoorOpen()
+                                break
+                            default:
+                                postTextToConsole("That is not the answer. Guess again", "")
+                        }
+                        break
+                    case "forestObstacle":
+                        if (consoleToGameCommandRef.current === forestObstacleOrder[forestObstacleProgress.current]){
+                            postTextToConsole("Correct guess, move forward", "")
+                            forestObstacleProgress.current++
+                            if(forestObstacleProgress.current === 6){
+                                postTextToConsole("You made it past the traps!", "")
+                                riddleStart()
+                            }
+                        } else if (consoleToGameCommandRef.current === "crouch" || consoleToGameCommandRef.current === "jump"){
+                            if (obstacleStamina.current !== 0){
+                                obstacleStamina.current--
+                                postTextToConsole(`The trap pushes Musashi but he manages to stabalise himself. He can only do this ${obstacleStamina.current} more times before he falls!`, "")
+                            } else {
+                                postTextToConsole("Musashi was knocked into the ocean! Game Over.", "")
+                                endGame(true)
+                            }
+                        } else {
+                            postTextToConsole(`Not a valid option. Please say "jump" or "crouch"`, "")
+                        }
                     default:
                         console.log("GameLogic:Not a command match")
                 }
@@ -195,6 +237,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         audioPause()
         transcriptInterrupt.current = true
         gameStarted.current = false
+        forestObstacleProgress.current = 0
+        obstacleStamina.current = 5
         // Just to make sure the transcript is printed before this.
         await new Promise(resolve => setTimeout(resolve, 300))
         delayedPosition.current = 0
@@ -252,36 +296,175 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         await new Promise(async (resolve, reject) => {
             cancelGame = reject;
             postTextToConsole("debug game started", "")
+            ending()
 
             // First fight
-            opponent.current = 1
-            startCombat()
+            // opponent.current = 1
+            // startCombat()
             resolve()
         })
     }
 
-    function riddle(){
-        console.log("we riddlin'")
+    async function riddleStart(){
+        await new Promise(async (resolve, reject) => {
+            cancelGame = reject;
+            console.log("we riddlin'")
+
+            audioRef.current.src = "./src/Audio/Narration/riddleIntro.mp3"
+            transcriptOutput("riddleIntro")
+            audioStart()
+            // Block until transcript and audio are done
+            await new Promise(async resolve => {storyBlock=resolve})
+
+            postTextToConsole("Do you want to look left, right, up, or down?", "")
+            waitingForUserInput.current = "riddleStart"
+            resolve()
+        })
     }
 
-    // TODO STAT TRACK : Alternative place(s) to put the heatmap data instead of the switch, I
+    // When the player is looking at the wrong spot on the wall
+    async function riddleSearchWrong(){
+        await new Promise(async (resolve, reject) => {
+            cancelGame = reject;
+
+            waitingForUserInput.current = ""
+            audioRef.current.src = "./src/Audio/Narration/notHere.mp3"
+            transcriptOutput("notHere")
+            audioStart()
+            // Block until transcript and audio are done
+            await new Promise(async resolve => {storyBlock=resolve})
+            waitingForUserInput.current = "riddleStart"
+
+            resolve()
+        })
+    }
+    // When the player finds the riddle
+    async function riddleFound(){
+        await new Promise(async (resolve, reject) => {
+            cancelGame = reject;
+
+            waitingForUserInput.current = ""
+            audioRef.current.src = "./src/Audio/Narration/ahRiddle.mp3"
+            transcriptOutput("ahRiddle")
+            audioStart()
+            // Block until transcript and audio are done
+            await new Promise(async resolve => {storyBlock=resolve})
+
+            audioRef.current.src = "./src/Audio/Narration/riddle.mp3"
+            transcriptOutput("riddle")
+            audioStart()
+            // Block until transcript and audio are done
+            await new Promise(async resolve => {storyBlock=resolve})
+
+            waitingForUserInput.current = "Riddle"
+
+            resolve()
+        })
+    }
+
+    // When the player answers the riddle correctly
+    async function riddleDoorOpen(){
+        await new Promise(async (resolve, reject) => {
+            cancelGame = reject;
+
+            waitingForUserInput.current = ""
+            audioRef.current.src = "./src/Audio/Narration/openDoor.mp3"
+            transcriptOutput("openDoor")
+            audioStart()
+            // Block until transcript and audio are done
+            await new Promise(async resolve => {storyBlock=resolve})
+
+            finale()
+
+            resolve()
+        })
+    }
+
+    async function finale(){
+        await new Promise(async (resolve, reject) => {
+            cancelGame = reject;
+
+            audioRef.current.src = "./src/Audio/Narration/finale.mp3"
+            transcriptOutput("finale")
+            audioStart()
+            // Block until transcript and audio are done
+            await new Promise(async resolve => {storyBlock=resolve})
+
+            opponent.current = 2
+            startCombat()
+            resolve()
+        })
+    }
+    async function ending(){
+        await new Promise(async (resolve, reject) => {
+            cancelGame = reject;
+
+            audioRef.current.src = "./src/Audio/Narration/ending.mp3"
+            transcriptOutput("ending")
+            audioStart()
+            // Block until transcript and audio are done
+            await new Promise(async resolve => {storyBlock=resolve})
+            postTextToConsole("You just finished Toxic Rōnin", "")
+            endGame()
+            resolve()
+        })
+    }
+
+    async function temp1(){
+        await new Promise(async (resolve, reject) => {
+            cancelGame = reject;
+
+            resolve()
+        })
+    }
+    async function temp2(){
+        await new Promise(async (resolve, reject) => {
+            cancelGame = reject;
+
+            resolve()
+        })
+    }
+
+
+
+
+            // TODO STAT TRACK : Alternative place(s) to put the heatmap data instead of the switch, I
     //  would personally recommend the switch to keep code cleaner and keep heatmap tracking code bundled
-    // TODO : Develop on next issue
     // Picked left on forest branching choice (fight)
     async function forestLeft(){
         postTextToConsole("You picked 'left'", "")
         await new Promise(async (resolve, reject) => {
             cancelGame = reject
 
+            audioRef.current.src = "./src/Audio/Narration/forestFight.mp3"
+            transcriptOutput("forestFight")
+            audioStart()
+            // Block until transcript and audio are done
+            await new Promise(async resolve => {storyBlock=resolve})
+
+            opponent.current = 1
+            startCombat()
+
             resolve()
         })
     }
-    // TODO : Develop on next issue
+    const forestObstacleOrder = ["crouch", "crouch", "crouch", "jump", "crouch", "jump"]
+    let forestObstacleProgress = useRef(0)
     // Picked right on forest branching choice (deal with trap)
+    let obstacleStamina = useRef(5)
     async function forestRight(){
         postTextToConsole("You picked 'right'", "")
         await new Promise(async (resolve, reject) => {
             cancelGame = reject
+
+            audioRef.current.src = "./src/Audio/Narration/forestObstacle.mp3"
+            transcriptOutput("forestObstacle")
+            audioStart()
+            // Block until transcript and audio are done
+            await new Promise(async resolve => {storyBlock=resolve})
+
+            waitingForUserInput.current = "forestObstacle"
+            postTextToConsole(`Say crouch, or jump in line with Musashis guess. Say "hint" in order to hear the dialogue again`, "")
 
             resolve()
         })
@@ -406,9 +589,9 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             // Only two opponents in the game so 1 = Forest, 2 = Ending
             // TODO implement ending
             if (opponent.current === 1){
-                riddle()
+                riddleStart()
             } else if (opponent.current === 2) {
-
+                ending()
             }
             return
         }
@@ -437,6 +620,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         postTextToConsole(`You have ${playerHealth.current} health remaining and the enemy has ${enemyHealth.current} remaining!`, "")
     }
 
+    // TODO : The random math on this I don't think is working. Enemy parried when he had charged.
     function enemyMoveAI(){
         // If it's the first move, pick randomly (except parry stab since it won't be turn 1 charged)
         if(firstTurn.current){
@@ -467,6 +651,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         // If none of the above, pick randomly (except parry stab as it can't be charging)
         console.log("ENEMY AI : no match. Random move")
         return randomMove(1,4)
+        // Note Javascript random sucks as it picks the same number over and over often
         function randomMove(min, max){
             // Pick a random number between min-max
             // 1 = Slash, 2 = Stab, 3 = Parry Slash, 4 = Parry Stab
@@ -574,6 +759,9 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             postTextToConsole(delayedTranscript, "")
             delayedPosition.current = 0
             isTranscriptRunning.current = false
+            // TODO : Hacky solution. For some reason if the transcript solves before the audio then story block works
+            //  but it should not matter
+            await new Promise(resolve => setTimeout(resolve, 1000))
             checkStoryBlock()
         // Transcript was interrupted
         } else {
