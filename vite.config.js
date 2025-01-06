@@ -19,6 +19,7 @@ export default defineConfig({
     root: process.cwd(),
     server: {
         middlewareMode: true,
+        historyApiFallback: true,
     },
     build: {
         ssr: true,
