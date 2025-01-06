@@ -27,6 +27,9 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     // Lets the game know what to do post fight
     let opponent = useRef(0)
 
+    const soundEffectAudio = useRef(null)
+    const musicAudio = useRef(null)
+
     // When the page first loads, create an audio player not attached to the DOM, so it isn't visible.
     useEffect(() => {
         audioRef.current = document.createElement("audio")
@@ -38,10 +41,38 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         }
         audioRef.current.addEventListener("ended", handleAudioEnd)
         // Clean up the listener
+
+        // To get the music to loop
+        const handleMusicEnd = () => {
+            console.log("music ended")
+            if (musicAudio.current) {
+                musicAudio.current.play();
+            }
+        }
+
+        // Make music audio player
+        musicAudio.current = document.createElement("audio")
+        musicAudio.current.src = "src/Audio/Game Sounds/battle-music.mp3"
+        musicAudio.current.addEventListener("ended", handleMusicEnd)
+
+
+
         return () => {
             audioRef.current.removeEventListener("ended", handleAudioEnd)
+            musicAudio.current.removeEventListener("ended", handleMusicEnd)
         }
     }, [])
+
+    // Creates an audio element, plays the effect, then the audio is not saved once the function is finished
+    // This allows us to have concurrent sound effects.
+    function playSoundEffect(url){
+        const audio = new Audio(url)
+
+        // Play the audio
+        audio.play().catch(err => {
+            console.error("Error playing audio:", err);
+        });
+    }
 
     // audio... functions for handling playing of audio + some transcript code
     const audioStart = async () => {
@@ -109,7 +140,9 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         // Check the incoming command
         switch (consoleToGameCommandRef.current) {
             case "start game":
-                // startGame()
+                startGame()
+                break
+            case "debug game":
                 debugGame()
                 break
             case "play":
@@ -301,10 +334,10 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             postTextToConsole("debug game started", "")
             // ending()
 
-            forestRight()
+            // forestRight()
             // First fight
             // opponent.current = 1
-            // startCombat()
+            startCombat()
             resolve()
         })
     }
@@ -474,11 +507,12 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         })
     }
 
-
     async function startCombat(){
         await new Promise(async (resolve, reject) => {
             // TODO CHECK IF THIS WORKS
             cancelGame = reject
+
+            musicAudio.current.play()
 
             // TODO : Check if removing the second quotes for no speaker actually has an effect
             postTextToConsole("You have entered battle!", "")
@@ -577,7 +611,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
         let damage = 0
         // Handle player move
-        if(movePicked === "slash"){damage = 30; playerChargingStab.current = false}
+        if(movePicked === "slash"){damage = 30; playerChargingStab.current = false; playSoundEffect("src/Audio/Game Sounds/sword-clash.mp3")}
         else if (movePicked === "stab" && playerChargingStab.current === true){damage = 70; playerChargingStab.current = false}
         else if (movePicked === "stab"){postTextToConsole(cTextPlayerStabCharge, ""); playerChargingStab.current = true}
         let damageMessage = ` and did ${damage} damage`
@@ -597,6 +631,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             } else if (opponent.current === 2) {
                 ending()
             }
+            musicAudio.current.currentTime = 0
+            musicAudio.current.pause()
             return
         }
 

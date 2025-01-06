@@ -15,7 +15,7 @@ export function speakText(text) {
     }
 
     // Cancel any ongoing speech before starting a new one
-    window.speechSynthesis.cancel();
+    // window.speechSynthesis.cancel();
   
     // Create the utterance
     const utterance = new SpeechSynthesisUtterance(text);
@@ -37,7 +37,7 @@ export function speakText(text) {
         utterance.voice = selectedVoice;
       }
     }
-  
+
     // Apply pitch, rate, and volume
     utterance.pitch = storedPitch;
     utterance.rate = storedRate;

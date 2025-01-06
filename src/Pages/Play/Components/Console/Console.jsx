@@ -16,10 +16,7 @@ export const Console =
         useImperativeHandle(ref,() => {
             return {
                 callPostToConsole: (message, speaker, isTranscript) => {
-                    post_new_input(message,speaker)
-                    if(!isTranscript) speakText(message)
-                    console.log(isTranscript)
-
+                    post_new_input(message,speaker, isTranscript)
                 }
             }
         })
@@ -167,7 +164,8 @@ export const Console =
 
         // TODO STAT TRACK : Total messages sent to the console per user and overall
         // POST to db the new message
-        function post_new_input(message, speaker) {
+        function post_new_input(message, speaker, isTranscript) {
+            if(speaker !== "User" || isTranscript) speakText(message)
             if(speaker !== ""){
                 setConsoleText((prevConsoleText) =>[...prevConsoleText, `${speaker} : ${message}`])
             } else {
