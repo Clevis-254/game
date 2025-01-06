@@ -1,5 +1,6 @@
 import {useState, useRef, useEffect, forwardRef, useImperativeHandle} from 'react'
 import './ConsoleStyling.css';
+import {speakText} from "@/utility/Speech.jsx";
 // NOTE : No game logic should be in this module.
 // Accessibility logic is fine (e.g rewind to last dialogue)
 // DESIGN NOTE : We fetch the entire console history every time we reload because this is a small game with few
@@ -14,8 +15,11 @@ export const Console =
         // This allows us to add messages to the console from external components
         useImperativeHandle(ref,() => {
             return {
-                callPostToConsole: (message, speaker) => {
+                callPostToConsole: (message, speaker, isTranscript) => {
                     post_new_input(message,speaker)
+                    if(!isTranscript) speakText(message)
+                    console.log(isTranscript)
+
                 }
             }
         })

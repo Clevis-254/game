@@ -201,7 +201,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                         } else if (consoleToGameCommandRef.current === "crouch" || consoleToGameCommandRef.current === "jump"){
                             if (obstacleStamina.current !== 0){
                                 obstacleStamina.current--
-                                postTextToConsole(`The trap pushes Musashi but he manages to stabalise himself. He can only do this ${obstacleStamina.current} more times before he falls!`, "")
+                                postTextToConsole(`The trap pushes Musashi but he manages to stabilize himself. He can only do this ${obstacleStamina.current} more times before he falls!`, "")
                             } else {
                                 postTextToConsole("Musashi was knocked into the ocean! Game Over.", "")
                                 endGame(true)
@@ -726,7 +726,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             } else {
                 // Clear visual transcript then print what we processed to the console
                 transcriptRef.current.innerHTML = ""
-                postTextToConsole(delayedTranscript, "")
+                postTextToConsole(delayedTranscript, "", true)
 
                 // Set the delayed position to wherever we got interrupted
                 delayedPosition.current = i
@@ -760,7 +760,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         if (transcriptInterrupt.current === false) {
             // Clear the transcript element, post whole transcript to console, reset necessary variables
             transcriptRef.current.innerHTML = ""
-            postTextToConsole(delayedTranscript, "")
+            postTextToConsole(delayedTranscript, "", true)
             delayedPosition.current = 0
             isTranscriptRunning.current = false
             // TODO : Hacky solution. For some reason if the transcript solves before the audio then story block works
