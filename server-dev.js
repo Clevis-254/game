@@ -175,9 +175,18 @@ app.post("/login", express.json(), async (req, res) => {
                 message: "invalid credentials"
             }); 
         }
-        // Only create/get console for regular users
+        // Only create/get console + stat tracker for regular users
         if (user.UserType !== 'admin') {
             await getUserConsole(user._id, user.UserType);
+
+            // Check if stats already exist for this user
+            let stats = await Stats.findOne({ user: user._id });
+
+            if (!stats) {
+              // Create stat tracker for the user if they don't have one
+              stats = new Stats({ user: user._id });
+              await stats.save();
+            }
         }
         console.log('console loaded');
 
@@ -439,6 +448,24 @@ app.post("/post_console_history",ensureAuthenticated ,async (req, res) => {
     }
 })
 
+// Get stats
+app.get('/user/stats', ensureAuthenticated, async (req, res) => {
+    try {
+        const userId = req.session.user.id;
+        const stats = await Stats.findOne({ user: userId });
+
+        if (!stats) {
+            //
+            stats = new Stats({ user: userId });
+            await stats.save();
+        }
+
+        res.status(200).json({stats});
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // POST route for deleting all console history
 app.post("/post_clear_console", ensureAuthenticated,async (req, res) => {

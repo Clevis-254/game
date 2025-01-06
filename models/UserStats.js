@@ -25,7 +25,7 @@ const UserStatsSchema = new mongoose.Schema({
   },
   riddleGuesses: {
     correct: { type: Number, default: 0 },
-    incorrect: { type: Number, default: 0 },
+    incorrect: { type: Number, default: 0 }
   },
   audioFiles: {
     hit: { type: Number, default: 0 },
@@ -33,20 +33,25 @@ const UserStatsSchema = new mongoose.Schema({
     stamina: { type: Number, default: 0 },
     damaged: { type: Number, default: 0 },
     eating: { type: Number, default: 0 },
-    death: { type: Number, default: 0 },
+    death: { type: Number, default: 0 }
   },
   commands: {
+    startGame: { type: Number, default: 0 },
+    pause: { type: Number, default: 0 },
     repeat: { type: Number, default: 0 },
     endGame: { type: Number, default: 0 },
-    goFaster: { type: Number, default: 0 },
-    goSlower: { type: Number, default: 0 },
+    speedUp: { type: Number, default: 0 },
+    slowDown: { type: Number, default: 0 },
     restart: { type: Number, default: 0 },
+    clear: { type: Number, default: 0 },
+    rewind: { type: Number, default: 0 },
+    help: { type: Number, default: 0 }
   }
   heatmap: {
     forestObstacle: { type: Number, default: 0 },
     forestFight: { type: Number, default: 0 },
     riddle: { type: Number, default: 0 },
-    boss: { type: Number, default: 0 },
+    boss: { type: Number, default: 0 }
   }
 });
 
