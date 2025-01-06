@@ -2,7 +2,6 @@ import React from 'react';
 import TTSSettings from "./TTSSettings.jsx";
 import AudioSettings from './AudioSettings.jsx';
 import Banner from "../Banner.jsx";
-import "../../styles/SettingsPageStyles.css";
 
 export default function SettingsPage() {
   return (
