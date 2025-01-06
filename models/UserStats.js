@@ -46,7 +46,7 @@ const UserStatsSchema = new mongoose.Schema({
     clear: { type: Number, default: 0 },
     rewind: { type: Number, default: 0 },
     help: { type: Number, default: 0 }
-  }
+  },
   heatmap: {
     forestObstacle: { type: Number, default: 0 },
     forestFight: { type: Number, default: 0 },
@@ -65,5 +65,5 @@ UserStatsSchema.virtual('totalRiddleGuesses').get(function() {
   return Object.values(this.riddleGuesses).reduce((total, count) => total + count, 0);
 });
 
-const UserStatsSchema = mongoose.model('stats', UserStatsSchema);
-export default UserStatsSchema;
+const _UserStatsSchema = mongoose.model('stats', UserStatsSchema);
+export default _UserStatsSchema;

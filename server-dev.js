@@ -3,6 +3,7 @@ import express from 'express';
 import mongoose from 'mongoose'
 import { createServer } from 'vite';
 import consoleLogHistorySchema from "./models/consoleLogHistory.js";
+import UserStats from "./models/UserStats.js";
 import bodyParser from "body-parser";
 import session from 'express-session';
 import bcrypt, { compare } from 'bcrypt';
@@ -180,11 +181,11 @@ app.post("/login", express.json(), async (req, res) => {
             await getUserConsole(user._id, user.UserType);
 
             // Check if stats already exist for this user
-            let stats = await Stats.findOne({ user: user._id });
+            let stats = await UserStats.findOne({ user: user._id });
 
             if (!stats) {
               // Create stat tracker for the user if they don't have one
-              stats = new Stats({ user: user._id });
+              stats = new UserStats({ user: user._id });
               await stats.save();
             }
         }
@@ -235,6 +236,8 @@ app.post('/signup', async (req, res) => {
         // Create console for new user
         await getUserConsole(user._id, user.UserType);
         console.log('console created');
+
+        // TODO STATS Create stat tracker for new user
 
         // Set up session for new user
         req.session.user = {
@@ -455,13 +458,75 @@ app.get('/user/stats', ensureAuthenticated, async (req, res) => {
         const stats = await Stats.findOne({ user: userId });
 
         if (!stats) {
-            //
+            // Create stat tracker for the user if they don't have one
             stats = new Stats({ user: userId });
             await stats.save();
         }
 
+        console.log(stats);
+
         res.status(200).json({stats});
 
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Post stats
+app.post("/user/stats", ensureAuthenticated, async (req, res) => {
+    console.log("POST /user_stats called");
+    try {
+        const userId = req.session.user.id;
+        const {
+            timePlayed,
+            choseLeft,
+            choseRight,
+            numberOfDeaths,
+            riddleGuesses,
+            audioFiles,
+            commands,
+            heatmap
+        } = req.body;
+
+        const updatedDocument = await UserStatsSchema.findOneAndUpdate(
+            { user: userId },
+            {
+                $inc: {
+                    timePlayed: timePlayed || 0,
+                    choseLeft: choseLeft || 0,
+                    choseRight: choseRight || 0,
+                    numberOfDeaths: numberOfDeaths || 0,
+                    "riddleGuesses.correct": riddleGuesses?.correct || 0,
+                    "riddleGuesses.incorrect": riddleGuesses?.incorrect || 0,
+                    "audioFiles.hit": audioFiles?.hit || 0,
+                    "audioFiles.miss": audioFiles?.miss || 0,
+                    "audioFiles.stamina": audioFiles?.stamina || 0,
+                    "audioFiles.damaged": audioFiles?.damaged || 0,
+                    "audioFiles.eating": audioFiles?.eating || 0,
+                    "audioFiles.death": audioFiles?.death || 0,
+                    "commands.startGame": commands?.startGame || 0,
+                    "commands.pause": commands?.pause || 0,
+                    "commands.repeat": commands?.repeat || 0,
+                    "commands.endGame": commands?.endGame || 0,
+                    "commands.speedUp": commands?.speedUp || 0,
+                    "commands.slowDown": commands?.slowDown || 0,
+                    "commands.restart": commands?.restart || 0,
+                    "commands.clear": commands?.clear || 0,
+                    "commands.rewind": commands?.rewind || 0,
+                    "commands.help": commands?.help || 0,
+                    "heatmap.forestObstacle": heatmap?.forestObstacle || 0,
+                    "heatmap.forestFight": heatmap?.forestFight || 0,
+                    "heatmap.riddle": heatmap?.riddle || 0,
+                    "heatmap.boss": heatmap?.boss || 0
+                }
+            },
+        );
+
+        if (!updatedDocument) {
+            return res.status(404).send("User stats error");
+        }
+
+        res.status(200).send("User stats updated successfully");
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
