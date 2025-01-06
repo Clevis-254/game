@@ -28,12 +28,12 @@ export function Play() {
 
     return (
         <>
-            <Banner />
-            <Hero />
-            <Features />
-            <Banner />
-            <Story />
-            <Console ref={consoleRef}
+        <Banner />
+        <Hero />
+        <Features />
+        <Story /> 
+        
+        <Console ref={consoleRef}
                      transcriptRef={transcriptRef}
                      commandToGameTrigger={commandToGameTrigger}
                      setCommandToGameTrigger={setCommandToGameTrigger}
@@ -43,8 +43,6 @@ export function Play() {
                        commandToGameTrigger={commandToGameTrigger}
                        setCommandToGameTrigger={setCommandToGameTrigger}
                        consoleToGameCommandRef={consoleToGameCommandRef}/>
-
-
         </>
     );
 }

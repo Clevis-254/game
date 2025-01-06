@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import './login.css';
 import { useForm } from 'react-hook-form';
-import {Link} from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
+
 
 export const Login = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
   const [loginError, setLoginError] = useState('');
+  const navigate = useNavigate();
 
   const onSubmit = async (data, e) => {
     e.preventDefault(); // Prevent form submission
@@ -47,62 +49,73 @@ const formSubmit = handleSubmit((data, e) => {
             <div className="card-body">
               <h3 className="card-title text-center mb-3">Login</h3>
               <div className="text-center mb-4">
-                <img src="/assets/Logo_2.png" alt="Logo" className="img-fluid logo" />
+                <img src="/assets/Logo_2.png" alt="Logo" className="img-fluid logo"/>
               </div>
               {loginError && (
-                <div className="alert alert-danger" role="alert">
-                  {loginError}
-                </div>
+                  <div className="alert alert-danger" role="alert">
+                    {loginError}
+                  </div>
               )}
               <form onSubmit={formSubmit} noValidate>
                 <div className="form-group mb-3">
                   <label htmlFor="username">Username</label>
                   <input
-                    type="text"
-                    className={`form-control ${errors.username ? 'is-invalid' : ''}`}
-                    id="username"
-                    placeholder="Enter username"
-                    {...register('username', { required: 'Username is required' })}
+                      type="text"
+                      className={`form-control ${errors.username ? 'is-invalid' : ''}`}
+                      id="username"
+                      placeholder="Enter username"
+                      {...register('username', {required: 'Username is required'})}
                   />
                   {errors.username && (
-                    <div className="invalid-feedback">
-                      {errors.username.message}
-                    </div>
+                      <div className="invalid-feedback">
+                        {errors.username.message}
+                      </div>
                   )}
                 </div>
                 <div className="form-group mb-3">
                   <label htmlFor="password">Password</label>
                   <input
-                    type="password"
-                    className={`form-control ${errors.password ? 'is-invalid' : ''}`}
-                    id="password"
-                    placeholder="Password"
-                    {...register('password', { required: 'Password is required' })}
+                      type="password"
+                      className={`form-control ${errors.password ? 'is-invalid' : ''}`}
+                      id="password"
+                      placeholder="Password"
+                      {...register('password', {required: 'Password is required'})}
                   />
                   {errors.password && (
-                    <div className="invalid-feedback">
-                      {errors.password.message}
-                    </div>
+                      <div className="invalid-feedback">
+                        {errors.password.message}
+                      </div>
                   )}
                 </div>
-                <button 
-                  type="submit" 
-                  className="btn btn-primary w-100"
+                <button
+                    type="submit"
+                    className="btn btn-primary w-100"
                 >
                   Login
                 </button>
               </form>
               <div className="text-center mt-3">
-                <Link to="/signup" className="signup-link">
+                <button
+                    className="btn btn-secondary w-100"
+                    onClick={() => navigate('/signup')}
+                >
                   Create an account or sign up now!
-                </Link>
+                </button>
+                <div className="mt-2">
+                  <button
+                      className="forgot-password-link"
+                      onClick={() => navigate('/forgot-password')}
+                  >
+                    Forgot your password? Reset it here!
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  );  
+  );
 };
 
 export default Login;
