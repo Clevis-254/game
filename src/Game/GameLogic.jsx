@@ -109,8 +109,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         // Check the incoming command
         switch (consoleToGameCommandRef.current) {
             case "start game":
-                startGame()
-                // debugGame()
+                // startGame()
+                debugGame()
                 break
             case "play":
                 audioPlay()
@@ -188,7 +188,10 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                         }
                         break
                     case "forestObstacle":
-                        if (consoleToGameCommandRef.current === forestObstacleOrder[forestObstacleProgress.current]){
+                        if (consoleToGameCommandRef.current === "hint"){
+                            forestRight()
+                        }
+                        else if (consoleToGameCommandRef.current === forestObstacleOrder[forestObstacleProgress.current]){
                             postTextToConsole("Correct guess, move forward", "")
                             forestObstacleProgress.current++
                             if(forestObstacleProgress.current === 6){
@@ -296,8 +299,9 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         await new Promise(async (resolve, reject) => {
             cancelGame = reject;
             postTextToConsole("debug game started", "")
-            ending()
+            // ending()
 
+            forestRight()
             // First fight
             // opponent.current = 1
             // startCombat()
