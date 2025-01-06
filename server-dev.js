@@ -57,19 +57,40 @@ try {
 } catch (error) {
     console.error("Error connecting to MongoDB:", error);
 }
-// TODO : TEMP CODE AS OUR DB IS CURRENTLY ENTIRELY LOCAL TO MAKE SURE THAT A SINGLE DEFAULT USERID IS ADDED TO THE MESSAGE SYSTEM
-async function firstConsoleUser(){
+// making console so that it can use live data instead
+// Get or create user console if it doesn't exist
+// getUserConsole function
+async function getUserConsole(userId, userType) {
     try {
-        const exists = await consoleLogHistorySchema.exists({ UserID: 0 });
-        if(!exists){
-            const newFirstUser = await consoleLogHistorySchema.create({UserID: 0, Messages: []})
+        if (userType !== 'admin') {
+            console.log(`Attempting to find console for user ID: ${userId}`);
+            let userConsole = await consoleLogHistorySchema.findOne({ UserID: userId });
+            
+            if (!userConsole) {
+                console.log(`No existing console found, creating new one...`);
+                userConsole = await consoleLogHistorySchema.create({
+                    UserID: userId,
+                    Messages: [],
+                    active: true
+                });
+                console.log(`New console created with ID: ${userConsole._id}`);
+            } else {
+                // Reactivate existing console
+                await consoleLogHistorySchema.findOneAndUpdate(
+                    { UserID: userId },
+                    { $set: { active: true } }
+                );
+                console.log(`Reactivated console with ID: ${userConsole._id}`);
+                console.log(`Messages count: ${userConsole.Messages.length}`);
+            }
+            return userConsole;
         }
+        return null;
     } catch (error) {
-        console.log(`Error creating first user : ${error.message}`)
+        console.error(`Error managing user console: ${error.message}`);
+        throw error;
     }
 }
-firstConsoleUser()
-
 // user samples 
 async function save() {
     try {
@@ -103,7 +124,6 @@ function ensureAuthenticated(req, res, next) {
 
     res.redirect('/login'); // Redirect if not authenticated
 }
-
 // basic functions
 app.get("/login", async (req, res) => {
     try {
@@ -155,6 +175,11 @@ app.post("/login", express.json(), async (req, res) => {
                 message: "invalid credentials"
             }); 
         }
+        // Only create/get console for regular users
+        if (user.UserType !== 'admin') {
+            await getUserConsole(user._id, user.UserType);
+        }
+        console.log('console loaded');
 
         // assigning sessions to the user while allowing them to login 
         req.session.user = {
@@ -190,25 +215,34 @@ app.post('/signup', async (req, res) => {
     try {
         const { name, email, password } = req.body;
 
-        // Check if the email already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ success: false, message: 'Email already exists' });
         }
 
-        // Create a new user
         const user = new User({ Name: name, email, Password: password });
         await user.save();
 
-        res.status(201).json({ success: true, redirect: '/login' });
+        // Create console for new user
+        await getUserConsole(user._id, user.UserType);
+        console.log('console created');
+
+        // Set up session for new user
+        req.session.user = {
+            id: user._id,
+            email: user.email,
+            userType: user.UserType
+        };
+
+        await req.session.save();
+
+        res.status(201).json({ success: true, redirect: '/play' });
     } catch (error) {
-        // Catch and handle validation errors
         if (error.name === 'ValidationError') {
             const messages = Object.values(error.errors).map(err => err.message);
             return res.status(400).json({ success: false, message: messages.join(', ') });
         }
 
-        // Handle other errors
         console.error('Signup error:', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
@@ -308,45 +342,97 @@ app.post('/reset-password', async (req, res) => {
 });
 
 // logout route
-app.post('/logout', ensureAuthenticated, (req, res) => {
-    req.session.destroy((err) => {
-        if (err) {
-            return res.status(500).json({ message: 'Logout failed' });
-        }
-        res.clearCookie('connect.sid');
-        res.json({ success: true, message: 'Logged out successfully' });
-    });
-});
-
-app.get("/get_console_history", async (req, res) => {
-    console.log("GET /get_console_history called")
+app.post('/logout', ensureAuthenticated, async (req, res) => {
     try {
-        // TODO : integrate with the login system to get the correct userID
-        // TODO : update it to be findOne, then update Console.jsx code too
-        const consoleHistory = await consoleLogHistorySchema.find({"UserID" : 0})
-        res.json(consoleHistory)
+        // Get user ID before destroying session
+        const userId = req.session.user.id;
+        const userType = req.session.user.userType;
 
+        // Clear the console if user is not admin
+        if (userType !== 'admin' && userId) {
+            try {
+                // Update console status to indicate it's closed
+                await consoleLogHistorySchema.findOneAndUpdate(
+                    { UserID: userId },
+                    { 
+                        $set: { 
+                            active: false,
+                            lastClosed: new Date()
+                        } 
+                    }
+                );
+                console.log(`Console closed for user ${userId}`);
+            } catch (error) {
+                console.error('Error closing console:', error);
+            }
+        }
+
+        // Clear session data
+        if (req.session) {
+            await new Promise((resolve, reject) => {
+                req.session.destroy((err) => {
+                    if (err) reject(err);
+                    resolve();
+                });
+            });
+
+            res.clearCookie('connect.sid', {
+                path: '/',
+                httpOnly: true,
+                secure: false,
+                sameSite: 'strict'
+            });
+
+            res.status(200).json({ 
+                success: true,
+                message: 'Logout successful',
+                redirect: '/login'
+            });
+        } else {
+            res.status(401).json({
+                success: false,
+                message: 'No active session'
+            });
+        }
     } catch (error) {
-        console.error('Error getting console history:', error);
-        res.status(500).send('Internal Server Error');
+        console.error('Logout error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error during logout'
+        });
     }
-})
-
+});
+app.get("/get_console_history", ensureAuthenticated, async (req, res) => {
+    try {
+        const userId = req.session.user.id;
+        const consoleHistory = await consoleLogHistorySchema.find({ UserID: userId });
+        
+        if (!consoleHistory) {
+            return res.status(404).json({ error: 'No console history found' });
+        }
+        
+        res.status(200).json(consoleHistory);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 // Route for posting a new console message to the database
-app.post("/post_console_history", async (req, res) => {
+app.post("/post_console_history",ensureAuthenticated ,async (req, res) => {
     console.log ("POST /post_console_history called")
     try {
-        const { MessageID, Message, Speaker } = req.body
+        const userId = req.session.user.id;
+        const { MessageID, Message, Speaker } = req.body;
 
-        // TODO : integrate with the login system to get the correct userID
         const updatedDocument = await consoleLogHistorySchema.findOneAndUpdate(
-            {"UserID" : 0},
-            { $push : { Messages : { MessageID, Message, Speaker} } }
-        )
+            { UserID: userId },
+            { $push: { Messages: { MessageID, Message, Speaker } } }
+        );
+        
         if (!updatedDocument) {
-            return res.status(404).send('Document not found');
+            return res.status(404).send('Console not found');
         }
-        return res.status(200).send("Request to post new message to DB successful")
+        
+        res.status(200).send("Message posted successfully");
     } catch (error) {
         console.error('Error posting to console history : ', error);
         res.status(500).send('Internal Server Error');
@@ -355,18 +441,22 @@ app.post("/post_console_history", async (req, res) => {
 
 
 // POST route for deleting all console history
-app.post("/post_clear_console", async (req, res) => {
+app.post("/post_clear_console", ensureAuthenticated,async (req, res) => {
     console.log("POST /post_clear_console called")
     try {
-        // TODO : integrate with the login system to get the correct userID
+        // using the user id instead
+        const userId = req.session.user.id;
+        
         const updatedDocument = await consoleLogHistorySchema.findOneAndUpdate(
-            {"UserID" : 0},
-            { $set : { Messages : [] } }
-        )
+            { UserID: userId },
+            { $set: { Messages: [] } }
+        );
+        
         if (!updatedDocument) {
-            return res.status(404).send('Document not found');
+            return res.status(404).send('Console not found');
         }
-        return res.status(200).send("Request to clear messages sent to DB successfully")
+        
+        res.status(200).send("Console cleared successfully");
     } catch (error) {
         console.error('Error posting to clear console history : ', error);
         res.status(500).send('Internal Server Error');
