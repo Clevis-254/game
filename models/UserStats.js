@@ -9,13 +9,9 @@ const UserStatsSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
-  choseLeft: {
-    type: Number,
-    default: 0,
-  },
-  choseRight: {
-    type: Number,
-    default: 0,
+  pathChoices: {
+    left: { type: Number, default: 0 },
+    right: { type: Number, default: 0 }
   },
   numberOfDeaths: {
     type: Number,
@@ -61,6 +57,11 @@ UserStatsSchema.virtual('totalAudioPlayed').get(function() {
 // Calculates total number of riddle guesses and stores it as a virtual field.
 UserStatsSchema.virtual('totalRiddleGuesses').get(function() {
   return Object.values(this.riddleGuesses).reduce((total, count) => total + count, 0);
+});
+
+// Calculates total number of path choices and stores it as a virtual field.
+UserStatsSchema.virtual('totalPathChoices').get(function() {
+  return Object.values(this.pathChoices).reduce((total, count) => total + count, 0);
 });
 
 const UserStats = mongoose.model('UserStats', UserStatsSchema);

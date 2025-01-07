@@ -97,8 +97,10 @@ async function getStatTracker(userId, userType) {
                 statTracker = await UserStats.create({
                     UserID: userId,
                     timePlayed: 0,
-                    choseLeft: 0,
-                    choseRight: 0,
+                    riddleGuesses: {
+                        left: 0,
+                        right: 0,
+                    },
                     numberOfDeaths: 0,
                     riddleGuesses: {
                         correct: 0,
@@ -175,8 +177,10 @@ async function save() {
         const statTracker = await UserStats.create({
             UserID: smelvin._id,
             timePlayed: 117666,
-            choseLeft: 47,
-            choseRight: 81,
+            riddleGuesses: {
+                left: 47,
+                right: 81,
+            },
             numberOfDeaths: 0,
             riddleGuesses: {
                 correct: 128,
