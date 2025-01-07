@@ -616,8 +616,11 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     const cTextEnemyParryStab = "The enemy used parry stab!"
 
     let firstTurn = useRef(true)
+
+    // TODO STAT TRACK : number of combat moves (func called each move)
     async function combatMove(movePicked) {
 
+        // TODO STAT TRACK : enemy moves picked (func outputs string, same as player moves)
         // Run enemy move AI
         const enemyMovePicked = enemyMoveAI()
         // Stun logic already handled. Resetting it here so the AI can take advantage of you being stunned
@@ -628,8 +631,10 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
         // Enemy parry logic
         // Enemy parried slash
+        // TODO STAT TRACK : enemy parried slash (not stun)
         if (movePicked === "slash" && enemyMovePicked === "parry slash") {
             // If the player swapped from charging stab and go parried, stun them
+            // TODO STAT TRACK : enemy parried slash (stun)
             if (playerChargingStab.current) {
                 stunned.current = 1
                 postTextToConsole(cTextEnemyParrySuccess, "")
@@ -644,12 +649,12 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                 return
             }
             // Enemy parried stab
+            // TODO STAT TRACK : enemy parried stab
         } else if (movePicked === "stab" && enemyMovePicked === "parry stab" && playerChargingStab.current) {
             stunned.current = 1
             playerChargingStab.current = false
             postTextToConsole(cTextEnemyParrySuccess, "")
             postTextToConsole(cTextPlayerStunned, "")
-            // TODO refactor this with stunned only being for the enemy since its not needed now for the player
             // If the player is stunned automatically do the next move
             postTextToConsole("You were stunned and so your move was skipped!", "")
             combatMove("")
@@ -658,8 +663,10 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
         // Player parry logic
         // Player parried slash
+        // TODO STAT TRACK : player parried slash (not stun)
         if (movePicked === "parry slash" && enemyMovePicked === "slash") {
             // If the player swapped from charging stab and go parried, stun them
+            // TODO STAT TRACK : player parried slash (stun)
             if (enemyChargingStab.current) {
                 stunned.current = 2
                 postTextToConsole(cTextPlayerParrySuccess, "")
@@ -670,6 +677,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                 return
             }
             // Player parried stab
+            // TODO STAT TRACK : player parried stab
         } else if (movePicked === "parry stab" && enemyMovePicked === "stab" && enemyChargingStab.current === true) {
             stunned.current = 2
             enemyChargingStab.current = false
@@ -677,16 +685,19 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             postTextToConsole(cTextEnemyStunned, "")
             return
         }
+        // TODO STAT TRACK : player stab cancel
         // If they didn't pick stab a second time, wipe their stab status
         if (movePicked !== "stab") {
             playerChargingStab.current = false
         }
+        // TODO STAT TRACK : enemy stab cancel
         if (enemyMovePicked !== "stab") {
             enemyChargingStab.current = false
         }
 
         let damage = 0
         // Handle player move
+        // TODO STAT TRACK : player move slash count
         if (movePicked === "slash") {
             damage = 30;
             playerChargingStab.current = false;
@@ -694,6 +705,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         } else if (movePicked === "stab" && playerChargingStab.current === true) {
             damage = 70;
             playerChargingStab.current = false
+            // TODO STAT TRACK : player move stab count
         } else if (movePicked === "stab") {
             postTextToConsole(cTextPlayerStabCharge, "");
             playerChargingStab.current = true
@@ -704,6 +716,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         if (!playerChargingStab.current && movePicked !== "") {
             postTextToConsole(`You picked ${movePicked}${damageMessage}!`, "")
         }
+        // TODO STAT TRACK : total dmg done by player
         enemyHealth.current -= damage
 
         // If the enemy has been killed
@@ -725,12 +738,14 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
         // Handle enemy move
         damage = 0
+        // TODO STAT TRACK : enemy move slash count
         if (enemyMovePicked === "slash") {
             damage = 30;
             enemyChargingStab.current = false
         } else if (enemyMovePicked === "stab" && enemyChargingStab.current === true) {
             damage = 70;
             enemyChargingStab.current = false
+            // TODO STAT TRACK : enemy move stab count
         } else if (enemyMovePicked === "stab") {
             postTextToConsole(cTextEnemyStabCharge, "");
             enemyChargingStab.current = true
@@ -741,8 +756,10 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         if (!enemyChargingStab.current && stunned.current !== 2) {
             postTextToConsole(`The enemy picked ${enemyMovePicked}${damageMessage}!`, "")
         }
+        // TODO STAT TRACK : total damage done by enemy
         playerHealth.current -= damage
 
+        // TODO STAT TRACK : player combat death count
         // If the player has been killed
         if (playerHealth.current <= 0) {
             playSoundEffect("src/Audio/Game Sounds/male-death-sound.mp3")
@@ -754,6 +771,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             musicAudio.current.pause()
             return
         }
+        // TODO STAT TRACK : total times stunning the enemy
         if (stunned.current === 2) {
             postTextToConsole("The enemy was stunned and so their move was skipped!", "");
             stunned.current = 0
@@ -763,7 +781,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         postTextToConsole(`You have ${playerHealth.current} health remaining and the enemy has ${enemyHealth.current} remaining!`, "")
     }
 
-    // TODO : The random math on this I don't think is working. Enemy parried when he had charged.
+    // TODO STAT TRACK : could do enemy AI choices total (at each if statement)
     function enemyMoveAI(){
         // If it's the first move, pick randomly (except parry stab since it won't be turn 1 charged)
         if(firstTurn.current){
