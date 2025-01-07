@@ -1,6 +1,6 @@
 import fs from 'fs';
 import express from 'express';
-import mongoose from 'mongoose'
+import mongoose from 'mongoose';
 import { createServer } from 'vite';
 import consoleLogHistorySchema from "./models/consoleLogHistory.js";
 import UserStats from "./models/UserStats.js";
@@ -17,13 +17,6 @@ import path from "path";
 
 //importing express into the server
 const app = express();
-
-app.use(bodyParser.json())
-app.use(
-    bodyParser.urlencoded({
-        extended: true,
-    }),
-);
 
 //  middleware configurations
 app.use(express.json());
@@ -97,12 +90,12 @@ async function getStatTracker(userId, userType) {
     try {
         if (userType !== 'admin') {
             console.log(`Attempting to find stat tracker for user ID: ${userId}`);
-            let statTracker = await UserStats.findOne({ user: userId });
+            let statTracker = await UserStats.findOne({ UserID: userId });
 
             if (!statTracker) {
                 console.log(`No existing stat tracker, creating new one...`);
                 statTracker = await UserStats.create({
-                    user: userId,
+                    UserID: userId,
                     timePlayed: 0,
                     choseLeft: 0,
                     choseRight: 0,
@@ -145,7 +138,7 @@ async function getStatTracker(userId, userType) {
 
             return statTracker;
         }
-        console.log(`No stats for role "${userRole}" necessary.`);
+        console.log(`No stats for "${userType}" necessary.`);
         return null;
     } catch (error) {
         console.error(`Error managing user stats: ${error.message}`);
@@ -156,6 +149,11 @@ async function getStatTracker(userId, userType) {
 // user samples 
 async function save() {
     try {
+        // DO NOT USE IN PROD THIS WILL WIPE ALL USER DATA
+        // Removes previous samples for dev purposes.
+        await User.deleteMany({});
+        await UserStats.deleteMany({});
+
         const user = await User.create({
             Name: "Gikenyi",
             email: "s@email.com",
@@ -166,6 +164,50 @@ async function save() {
             email: "admin@email.com",
             Password: "admin1234",
             UserType: "admin"
+        });
+        const smelvin = await User.create({
+            Name: "Smelvin Potter",
+            email: "spotter@email.com",
+            Password: "approaching"
+        });
+
+        // Example stats for Smelvin.
+        const statTracker = await UserStats.create({
+            UserID: smelvin._id,
+            timePlayed: 117666,
+            choseLeft: 47,
+            choseRight: 81,
+            numberOfDeaths: 0,
+            riddleGuesses: {
+                correct: 128,
+                incorrect: 0,
+            },
+            audioFiles: {
+                hit: 237,
+                miss: 0,
+                stamina: 237,
+                damaged: 0,
+                eating: 893,
+                death: 0,
+            },
+            commands: {
+                startGame: 128,
+                pause: 21,
+                repeat: 16,
+                endGame: 0,
+                speedUp: 3,
+                slowDown: 2,
+                restart: 7,
+                clear: 11,
+                rewind: 5,
+                help: 0,
+            },
+            heatmap: {
+                forestObstacle: 0,
+                forestFight: 0,
+                riddle: 0,
+                boss: 0,
+            },
         });
     } catch (error) {
         console.error("Error creating user:", error);
@@ -514,7 +556,7 @@ app.post("/post_console_history",ensureAuthenticated ,async (req, res) => {
 app.get('/user/stats', ensureAuthenticated, async (req, res) => {
     try {
         const userId = req.session.user.id;
-        const stats = await UserStats.findOne({ user: userId });
+        const stats = await UserStats.findOne({ UserID: userId });
 
         if (!stats) {
             return res.status(404).send('Stat tracker not found');
@@ -530,7 +572,7 @@ app.get('/user/stats', ensureAuthenticated, async (req, res) => {
 
 // Post stats
 app.post("/user/stats", ensureAuthenticated, async (req, res) => {
-    console.log("POST /user_stats called");
+    console.log("POST /user/stats called");
     try {
         const userId = req.session.user.id;
         const {
@@ -545,7 +587,7 @@ app.post("/user/stats", ensureAuthenticated, async (req, res) => {
         } = req.body;
 
         const updatedDocument = await UserStatsSchema.findOneAndUpdate(
-            { user: userId },
+            { UserID: userId },
             {
                 $inc: {
                     timePlayed: timePlayed || 0,

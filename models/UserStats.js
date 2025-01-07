@@ -1,11 +1,9 @@
 import mongoose from 'mongoose';
 
 const UserStatsSchema = new mongoose.Schema({
-  user: {
+  UserID: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'user',
-    required: true,
-    unique: true,
+    ref: 'User'
   },
   timePlayed: {
     type: Number,
@@ -65,5 +63,5 @@ UserStatsSchema.virtual('totalRiddleGuesses').get(function() {
   return Object.values(this.riddleGuesses).reduce((total, count) => total + count, 0);
 });
 
-const _UserStatsSchema = mongoose.model('stats', UserStatsSchema);
-export default _UserStatsSchema;
+const UserStats = mongoose.model('UserStats', UserStatsSchema);
+export default UserStats;
