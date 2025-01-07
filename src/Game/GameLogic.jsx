@@ -8,6 +8,8 @@ import transcripts from "../Audio/Narration/transcripts.jsx";
 
 // TODO : Print transcripts current output when the page is exited / reloaded so we can get a better idea
 //   on where we left off
+// TODO : Get tts to cancel the queue in certain situations where we want it
+// TODO : Speed up speeds up tts speed as well
 export function GameLogic({ postTextToConsole, transcriptRef,
                               commandToGameTrigger, setCommandToGameTrigger, consoleToGameCommandRef}) {
 
@@ -129,125 +131,158 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     // Uses a state variable to trigger this function, then uses a ref to change the value again
     // without re-rendering. Uses isInitialRenderConsoleToGame so it doesn't run on initial render
     const isInitialRenderConsoleToGame = useRef(true);
-    useEffect(() => {
-        console.log(`commandRef thing ran with command ${consoleToGameCommandRef.current}`)
-        if (isInitialRenderConsoleToGame.current) {
-            isInitialRenderConsoleToGame.current = false
-            return
-        }
-        // TODO STAT TRACK : Don't do the tracking of commands here, do it in Console.jsx as not
-        //  all commands are passed to this component.
-        // Check the incoming command
-        switch (consoleToGameCommandRef.current) {
-            case "start game":
-                startGame()
-                break
-            case "debug game":
-                debugGame()
-                break
-            case "play":
-                audioPlay()
-                break
-            case "pause":
-                audioPause()
-                break
-            case "speed up":
-                audioSpeedUp()
-                break
-            case "slow down":
-                audioSlowDown()
-                break
-            // TODO : USE STRING PARSING TO ADD CUSTOM PARAMETERS....
-            case "rewind":
-                audioRewind(10)
-                break
-            case "end game":
-                endGame()
-                break
-            case "restart":
-                endGame(true)
-                break
-            default:
-                // TODO STAT TRACK : waitingForUserInput will match the current choice point, any
-                //  thing added in this switch will need to be tracked. More to be added in the next
-                //  game feature branch.
-                // Used for in game path branching
-                // Dont run if the input is blank (from re-rendering)
-            if (consoleToGameCommandRef !==""){
-                switch (waitingForUserInput.current){
-                    case "Forest":
-                        if (consoleToGameCommandRef.current === "left"){forestLeft()}
-                        else if (consoleToGameCommandRef.current === "right"){forestRight()}
-                        // TODO : integrate tts
-                        else {postTextToConsole(`Please pick either "left" or "right"`, "")}
-                        waitingForUserInput.current = ""
-                        break
-                    case "Combat":
-                        switch (consoleToGameCommandRef.current){
-                            case "slash":
-                            case "stab":
-                            case "parry slash":
-                            case "parry stab":
-                                combatMove(consoleToGameCommandRef.current)
-                                break
-                            default:
-                                postTextToConsole("Not a valid move. Use help combat to learn more", "")
-                                break
-                        }
-                        postTextToConsole("Pick your move!", "")
-                        break
-                    case "riddleStart":
-                        switch (consoleToGameCommandRef.current){
-                            case "up":
-                            case "right":
-                            case "left":
-                                riddleSearchWrong()
-                                break
-                            case "down":
-                                riddleFound()
-                                break
-                            default:
-                                postTextToConsole("Not a place to search on the wall. Try again", "")
-                        }
-                        break
-                    case "Riddle":
-                        switch (consoleToGameCommandRef.current){
-                            case "door":
-                            case "a door":
-                                riddleDoorOpen()
-                                break
-                            default:
-                                postTextToConsole("That is not the answer. Guess again", "")
-                        }
-                        break
-                    case "forestObstacle":
-                        if (consoleToGameCommandRef.current === "hint"){
-                            forestRight()
-                        }
-                        else if (consoleToGameCommandRef.current === forestObstacleOrder[forestObstacleProgress.current]){
-                            postTextToConsole("Correct guess, move forward", "")
-                            forestObstacleProgress.current++
-                            if(forestObstacleProgress.current === 6){
-                                postTextToConsole("You made it past the traps!", "")
-                                riddleStart()
-                            }
-                        } else if (consoleToGameCommandRef.current === "crouch" || consoleToGameCommandRef.current === "jump"){
-                            if (obstacleStamina.current !== 0){
-                                obstacleStamina.current--
-                                postTextToConsole(`The trap pushes Musashi but he manages to stabilize himself. He can only do this ${obstacleStamina.current} more times before he falls!`, "")
-                            } else {
-                                postTextToConsole("Musashi was knocked into the ocean! Game Over.", "")
-                                endGame(true)
-                            }
-                        } else {
-                            postTextToConsole(`Not a valid option. Please say "jump" or "crouch"`, "")
-                        }
-                    default:
-                        console.log("GameLogic:Not a command match")
-                }
+    useEffect( () => {
+        cmdFunc() // Cant make useEffect async so need to wrap the function
+        async function cmdFunc(){
+            console.log(`commandRef thing ran with command ${consoleToGameCommandRef.current}`)
+            if (isInitialRenderConsoleToGame.current) {
+                isInitialRenderConsoleToGame.current = false
+                return
             }
+            // TODO STAT TRACK : Don't do the tracking of commands here, do it in Console.jsx as not
+            //  all commands are passed to this component.
+            // Check the incoming command
+            switch (consoleToGameCommandRef.current) {
+                case "start game":
+                    tutorialQuestion()
+                    break
+                case "debug game":
+                    debugGame()
+                    break
+                case "play":
+                    audioPlay()
+                    break
+                case "pause":
+                    audioPause()
+                    break
+                case "speed up":
+                    audioSpeedUp()
+                    break
+                case "slow down":
+                    audioSlowDown()
+                    break
+                // TODO : USE STRING PARSING TO ADD CUSTOM PARAMETERS....
+                case "rewind":
+                    audioRewind(10)
+                    break
+                case "end game":
+                    endGame()
+                    break
+                case "restart":
+                    endGame(true)
+                    break
+                default:
+                    // TODO STAT TRACK : waitingForUserInput will match the current choice point, any
+                    //  thing added in this switch will need to be tracked. More to be added in the next
+                    //  game feature branch.
+                    // Used for in game path branching
+                    // Dont run if the input is blank (from re-rendering)
+                    if (consoleToGameCommandRef !== "") {
+                        switch (waitingForUserInput.current) {
+                            case "TutorialQuestion":
+                                switch (consoleToGameCommandRef.current) {
+                                    case "yes":
+                                        tutorial()
+                                        waitingForUserInput.current = ""
+                                        break
+                                    case "no":
+                                        startGame()
+                                        waitingForUserInput.current = ""
+                                        break
+                                    default:
+                                        postTextToConsole(`Please say "yes" or "no"`, "")
+                                        break
+                                }
+                                break
+                            case "Forest":
+                                if (consoleToGameCommandRef.current === "left") {
+                                    forestLeft()
+                                } else if (consoleToGameCommandRef.current === "right") {
+                                    forestRight()
+                                }
+                                // TODO : integrate tts
+                                else {
+                                    postTextToConsole(`Please pick either "left" or "right"`, "")
+                                }
+                                waitingForUserInput.current = ""
+                                break
+                            case "Combat":
+                                switch (consoleToGameCommandRef.current) {
+                                    case "slash":
+                                    case "stab":
+                                    case "parry slash":
+                                    case "parry stab":
+                                        combatMove(consoleToGameCommandRef.current)
+                                        break
+                                    default:
+                                        postTextToConsole("Not a valid move. Use help combat to learn more", "")
+                                        break
+                                }
+                                postTextToConsole("Pick your move!", "")
+                                break
+                            case "riddleStart":
+                                switch (consoleToGameCommandRef.current) {
+                                    case "up":
+                                    case "right":
+                                    case "left":
+                                        riddleSearchWrong()
+                                        break
+                                    case "down":
+                                        riddleFound()
+                                        break
+                                    default:
+                                        postTextToConsole("Not a place to search on the wall. Try again", "")
+                                        await new Promise(resolve => setTimeout(resolve, 4000))
+                                        playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+                                }
+                                break
+                            case "Riddle":
+                                switch (consoleToGameCommandRef.current) {
+                                    case "door":
+                                    case "a door":
+                                        riddleDoorOpen()
+                                        break
+                                    default:
+                                        postTextToConsole("That is not the answer. Guess again", "")
+                                        await new Promise(resolve => setTimeout(resolve, 3000))
+                                        playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+                                }
+                                break
+                            case "forestObstacle":
+                                if (consoleToGameCommandRef.current === "hint") {
+                                    forestRight()
+                                } else if (consoleToGameCommandRef.current === forestObstacleOrder[forestObstacleProgress.current]) {
+                                    postTextToConsole("Correct guess, move forward", "")
+                                    forestObstacleProgress.current++
+                                    await new Promise(resolve => setTimeout(resolve, 2000))
+                                    playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+                                    if (forestObstacleProgress.current === 6) {
+                                        postTextToConsole("You made it past the traps!", "")
+                                        riddleStart()
+                                    }
+                                } else if (consoleToGameCommandRef.current === "crouch" || consoleToGameCommandRef.current === "jump") {
+                                    if (obstacleStamina.current !== 0) {
+                                        obstacleStamina.current--
+                                        postTextToConsole(`The trap pushes Musashi but he manages to stabilize himself. He can only do this ${obstacleStamina.current} more times before he falls!`, "")
+                                        await new Promise(resolve => setTimeout(resolve, 8000))
+                                        playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+                                    } else {
+                                        postTextToConsole("Musashi was knocked into the ocean! Game Over.", "")
+                                        endGame(true)
+                                    }
+                                } else {
+                                    postTextToConsole(`Not a valid option. Please say "jump" or "crouch"`, "")
+                                    await new Promise(resolve => setTimeout(resolve, 4000))
+                                    playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+                                }
+                            default:
+                                console.log("GameLogic:Not a command match")
+                        }
+                    }
+            }
+            consoleToGameCommandRef.current = ""
         }
-        consoleToGameCommandRef.current = ""
+
     },[commandToGameTrigger])
 
     // Will run a resolve on the current await promise being used to block story progress
@@ -287,6 +322,56 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         }
     }
 
+    async function tutorialQuestion(){
+        // Prevents this from running multiple times
+        if (gameStarted.current === true){
+            postTextToConsole("The game is already started", "Console")
+            return
+        }
+        gameStarted.current = true
+        postTextToConsole("Would you like to go to the tutorial? Say yes or no", "")
+        await new Promise(resolve => setTimeout(resolve, 7000))
+        playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+        waitingForUserInput.current = "TutorialQuestion"
+
+    }
+
+    async function tutorial(){
+        await new Promise(async (resolve, reject) => {
+            cancelGame = reject;
+
+            postTextToConsole("Welcome to the tutorial. Throughout this experience, you will be able to give voice inputs to " +
+                "decide your actions in the game. You will be prompted to give voice inputs by this sound effect.", "")
+            // Just to make sure the tts is done first
+            await new Promise(resolve => setTimeout(resolve, 12000))
+            playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+            await new Promise(resolve => setTimeout(resolve, 1000))
+
+            postTextToConsole("This game has many different commands to control the experience. These include but are not" +
+                "limited to. Rewind, speed up, slow down, pause and play. You can call these commands" +
+                "at any time. If you wish to learn about any of these commands" +
+                "please say `help` for more information", "")
+
+            postTextToConsole("In this game you will fight many enemies in battle. These battles are turn based." +
+                " In battle you have four moves," +
+                " slash, stab, parry slash and parry stab. Slash is a standard attack that can be parried with" +
+                "parry slash, stab is a move that you charge up on your initial turn and can then either go through" +
+                "with it  on your next turn and do lots of damage to your opponent or you can switch to slash to trick your opponent. " +
+                "Be wary however as if your opponent predicts this and picks parry slash then you will then be stunned and" +
+                "miss a turn. The same goes for if your opponent predicts you follow through and they pick parry stab. " +
+                "This makes stab a risky move but with high reward.", "")
+
+            postTextToConsole("If you want to hear that again mid game, say help combat to hear that again", "")
+
+            postTextToConsole("Would you like to hear the tutorial again? Say yes or no", "")
+            await new Promise(resolve => setTimeout(resolve, 68000))
+            playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+            waitingForUserInput.current = "TutorialQuestion"
+
+            resolve()
+        })
+    }
+
     // TODO STAT TRACK : Add in-game tracking time here.
     let gameStarted = useRef(false)
     // Cancel holds the reject function of the promise. This allows us to cancel the function
@@ -294,12 +379,6 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     let cancelGame
 
     async function startGame() {
-        // Prevents this from running multiple times
-        if (gameStarted.current === true){
-            postTextToConsole("The game is already started", "Console")
-            return
-        }
-        gameStarted.current = true
         // Promise used to cancel the game at any point
         await new Promise(async (resolve, reject) => {
             cancelGame = reject;
@@ -322,6 +401,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             await new Promise(resolve => setTimeout(resolve, 300))
             // TODO : integrate tts
             postTextToConsole("Choose your path. Do you want to go left or right?", "")
+            await new Promise(resolve => setTimeout(resolve, 4000))
+            playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
             resolve()
         })
     }
@@ -355,6 +436,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
             postTextToConsole("Do you want to look left, right, up, or down?", "")
             waitingForUserInput.current = "riddleStart"
+            await new Promise(resolve => setTimeout(resolve, 4000))
+            playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
             resolve()
         })
     }
@@ -370,6 +453,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             audioStart()
             // Block until transcript and audio are done
             await new Promise(async resolve => {storyBlock=resolve})
+            playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
             waitingForUserInput.current = "riddleStart"
 
             resolve()
@@ -392,6 +476,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             audioStart()
             // Block until transcript and audio are done
             await new Promise(async resolve => {storyBlock=resolve})
+            playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
 
             waitingForUserInput.current = "Riddle"
 
@@ -436,6 +521,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         await new Promise(async (resolve, reject) => {
             cancelGame = reject;
 
+            await new Promise(resolve => setTimeout(resolve, 4000))
             audioRef.current.src = "./src/Audio/Narration/ending.mp3"
             transcriptOutput("ending")
             audioStart()
@@ -446,24 +532,6 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             resolve()
         })
     }
-
-    async function temp1(){
-        await new Promise(async (resolve, reject) => {
-            cancelGame = reject;
-
-            resolve()
-        })
-    }
-    async function temp2(){
-        await new Promise(async (resolve, reject) => {
-            cancelGame = reject;
-
-            resolve()
-        })
-    }
-
-
-
 
             // TODO STAT TRACK : Alternative place(s) to put the heatmap data instead of the switch, I
     //  would personally recommend the switch to keep code cleaner and keep heatmap tracking code bundled
@@ -502,6 +570,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
             waitingForUserInput.current = "forestObstacle"
             postTextToConsole(`Say crouch, or jump in line with Musashis guess. Say "hint" in order to hear the dialogue again`, "")
+            await new Promise(resolve => setTimeout(resolve, 7000))
+            playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
 
             resolve()
         })
@@ -546,19 +616,21 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     const cTextEnemyParryStab = "The enemy used parry stab!"
 
     let firstTurn = useRef(true)
-    function combatMove(movePicked){
+    async function combatMove(movePicked) {
 
         // Run enemy move AI
         const enemyMovePicked = enemyMoveAI()
         // Stun logic already handled. Resetting it here so the AI can take advantage of you being stunned
-        if(stunned.current === 1){stunned.current = 0}
+        if (stunned.current === 1) {
+            stunned.current = 0
+        }
         console.log(`enemy move picked ${enemyMovePicked}`)
 
         // Enemy parry logic
         // Enemy parried slash
-        if(movePicked === "slash" &&  enemyMovePicked === "parry slash"){
+        if (movePicked === "slash" && enemyMovePicked === "parry slash") {
             // If the player swapped from charging stab and go parried, stun them
-            if(playerChargingStab.current){
+            if (playerChargingStab.current) {
                 stunned.current = 1
                 postTextToConsole(cTextEnemyParrySuccess, "")
                 postTextToConsole(cTextPlayerStunned, "")
@@ -571,8 +643,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                 postTextToConsole(cTextEnemyParrySuccess, "")
                 return
             }
-        // Enemy parried stab
-        } else if (movePicked === "stab" && enemyMovePicked === "parry stab" && playerChargingStab.current){
+            // Enemy parried stab
+        } else if (movePicked === "stab" && enemyMovePicked === "parry stab" && playerChargingStab.current) {
             stunned.current = 1
             playerChargingStab.current = false
             postTextToConsole(cTextEnemyParrySuccess, "")
@@ -586,9 +658,9 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
         // Player parry logic
         // Player parried slash
-        if(movePicked === "parry slash" &&  enemyMovePicked === "slash"){
+        if (movePicked === "parry slash" && enemyMovePicked === "slash") {
             // If the player swapped from charging stab and go parried, stun them
-            if(enemyChargingStab.current){
+            if (enemyChargingStab.current) {
                 stunned.current = 2
                 postTextToConsole(cTextPlayerParrySuccess, "")
                 postTextToConsole(cTextEnemyStunned, "")
@@ -598,7 +670,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                 return
             }
             // Player parried stab
-        } else if (movePicked === "parry stab" && enemyMovePicked === "stab" && enemyChargingStab.current === true){
+        } else if (movePicked === "parry stab" && enemyMovePicked === "stab" && enemyChargingStab.current === true) {
             stunned.current = 2
             enemyChargingStab.current = false
             postTextToConsole(cTextPlayerParrySuccess, "")
@@ -606,55 +678,86 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             return
         }
         // If they didn't pick stab a second time, wipe their stab status
-        if(movePicked !== "stab"){playerChargingStab.current = false}
-        if(enemyMovePicked !== "stab"){enemyChargingStab.current = false}
+        if (movePicked !== "stab") {
+            playerChargingStab.current = false
+        }
+        if (enemyMovePicked !== "stab") {
+            enemyChargingStab.current = false
+        }
 
         let damage = 0
         // Handle player move
-        if(movePicked === "slash"){damage = 30; playerChargingStab.current = false; playSoundEffect("src/Audio/Game Sounds/sword-clash.mp3")}
-        else if (movePicked === "stab" && playerChargingStab.current === true){damage = 70; playerChargingStab.current = false}
-        else if (movePicked === "stab"){postTextToConsole(cTextPlayerStabCharge, ""); playerChargingStab.current = true}
+        if (movePicked === "slash") {
+            damage = 30;
+            playerChargingStab.current = false;
+            playSoundEffect("src/Audio/Game Sounds/sword-clash.mp3")
+        } else if (movePicked === "stab" && playerChargingStab.current === true) {
+            damage = 70;
+            playerChargingStab.current = false
+        } else if (movePicked === "stab") {
+            postTextToConsole(cTextPlayerStabCharge, "");
+            playerChargingStab.current = true
+        }
         let damageMessage = ` and did ${damage} damage`
 
         // Don't run when the player is charging
-        if(!playerChargingStab.current && movePicked !== ""){postTextToConsole(`You picked ${movePicked}${damageMessage}!`, "")}
+        if (!playerChargingStab.current && movePicked !== "") {
+            postTextToConsole(`You picked ${movePicked}${damageMessage}!`, "")
+        }
         enemyHealth.current -= damage
 
         // If the enemy has been killed
-        if (enemyHealth.current <= 0){
+        if (enemyHealth.current <= 0) {
             waitingForUserInput.current = ""
             postTextToConsole("You killed your foe and won the fight!", "")
             // Only two opponents in the game so 1 = Forest, 2 = Ending
             // TODO implement ending
-            if (opponent.current === 1){
+            if (opponent.current === 1) {
                 riddleStart()
             } else if (opponent.current === 2) {
                 ending()
             }
             musicAudio.current.currentTime = 0
             musicAudio.current.pause()
+            playSoundEffect("src/Audio/Game Sounds/male-death-sound.mp3")
             return
         }
 
         // Handle enemy move
         damage = 0
-        if(enemyMovePicked === "slash"){damage = 30; enemyChargingStab.current = false}
-        else if (enemyMovePicked === "stab" && enemyChargingStab.current === true){damage = 70; enemyChargingStab.current = false}
-        else if (enemyMovePicked === "stab"){postTextToConsole(cTextEnemyStabCharge, ""); enemyChargingStab.current = true}
+        if (enemyMovePicked === "slash") {
+            damage = 30;
+            enemyChargingStab.current = false
+        } else if (enemyMovePicked === "stab" && enemyChargingStab.current === true) {
+            damage = 70;
+            enemyChargingStab.current = false
+        } else if (enemyMovePicked === "stab") {
+            postTextToConsole(cTextEnemyStabCharge, "");
+            enemyChargingStab.current = true
+        }
         damageMessage = ` and did ${damage} damage`
 
         // Don't run when enemy is charging
-        if(!enemyChargingStab.current && stunned.current !== 2){postTextToConsole(`The enemy picked ${enemyMovePicked}${damageMessage}!`, "")}
+        if (!enemyChargingStab.current && stunned.current !== 2) {
+            postTextToConsole(`The enemy picked ${enemyMovePicked}${damageMessage}!`, "")
+        }
         playerHealth.current -= damage
 
         // If the player has been killed
-        if (playerHealth.current <= 0){
+        if (playerHealth.current <= 0) {
+            playSoundEffect("src/Audio/Game Sounds/male-death-sound.mp3")
             postTextToConsole("You have been killed and lost the fight. Game over.", "")
             waitingForUserInput.current = ""
+            await new Promise(resolve => setTimeout(resolve, 15000))
             endGame(true)
+            musicAudio.current.currentTime = 0
+            musicAudio.current.pause()
             return
         }
-        if(stunned.current === 2){postTextToConsole("The enemy was stunned and so their move was skipped!", ""); stunned.current = 0}
+        if (stunned.current === 2) {
+            postTextToConsole("The enemy was stunned and so their move was skipped!", "");
+            stunned.current = 0
+        }
 
         // Remaining health
         postTextToConsole(`You have ${playerHealth.current} health remaining and the enemy has ${enemyHealth.current} remaining!`, "")

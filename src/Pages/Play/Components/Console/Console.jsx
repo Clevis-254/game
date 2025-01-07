@@ -120,6 +120,7 @@ export const Console =
                     commandToGame(console_input_text)
                     post_new_input("Starting game now...", "Console")
                     break
+                // TODO : Pause transcript until this is done narrating.
                 case "help":
                     post_new_input(console_input_text, "User")
                     const outputList = ["Here is a list of all current commands",
@@ -136,6 +137,16 @@ export const Console =
                     for (let i in outputList) {
                         post_new_input(outputList[i], "Console")
                     }
+                    break
+                case "help combat":
+                    post_new_input("In this game you will fight many enemies in battle. These battles are turn based." +
+                "In battle you have four moves," +
+                " slash, stab, parry slash and parry stab. Slash is a standard attack that can be parried with" +
+                "parry slash, stab is a move that you charge up on your initial turn and can then either go through" +
+                "with it  on your next turn and do lots of damage to your opponent or you can switch to slash to trick your opponent." +
+                "Be wary however as if your opponent predicts this and picks parry slash then you will the stunned and" +
+                "miss a turn. The same goes for if your opponent predicts you follow through and they pick parry stab." +
+                "This makes stab a risky move but with high reward.", "")
                     break
                 case "play":
                 case "pause":
@@ -165,7 +176,7 @@ export const Console =
         // TODO STAT TRACK : Total messages sent to the console per user and overall
         // POST to db the new message
         function post_new_input(message, speaker, isTranscript) {
-            if(speaker !== "User" || isTranscript) speakText(message)
+            if(speaker !== "User" && !isTranscript) speakText(message)
             if(speaker !== ""){
                 setConsoleText((prevConsoleText) =>[...prevConsoleText, `${speaker} : ${message}`])
             } else {
