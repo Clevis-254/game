@@ -13,6 +13,10 @@ const UserStatsSchema = new mongoose.Schema({
     left: { type: Number, default: 0 },
     right: { type: Number, default: 0 }
   },
+  gameCompletions: {
+    type: Number,
+    default: 0,
+  },
   numberOfDeaths: {
     type: Number,
     default: 0,
@@ -47,11 +51,18 @@ const UserStatsSchema = new mongoose.Schema({
     riddle: { type: Number, default: 0 },
     boss: { type: Number, default: 0 }
   }
+}, {
+  toJSON: { virtuals: true } // Sends the virtual fields when JSON is fetched
 });
 
 // Calculates total number of audio files played and stores it as a virtual field.
 UserStatsSchema.virtual('totalAudioPlayed').get(function() {
   return Object.values(this.audioFiles).reduce((total, count) => total + count, 0);
+});
+
+// Calculates total number of commands used and stores it as a virtual field.
+UserStatsSchema.virtual('totalCommandsUsed').get(function() {
+  return Object.values(this.commands).reduce((total, count) => total + count, 0);
 });
 
 // Calculates total number of riddle guesses and stores it as a virtual field.

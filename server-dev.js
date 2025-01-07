@@ -101,6 +101,7 @@ async function getStatTracker(userId, userType) {
                         left: 0,
                         right: 0,
                     },
+                    gameCompletions: 0,
                     numberOfDeaths: 0,
                     riddleGuesses: {
                         correct: 0,
@@ -176,11 +177,12 @@ async function save() {
         // Example stats for Smelvin.
         const statTracker = await UserStats.create({
             UserID: smelvin._id,
-            timePlayed: 117666,
-            riddleGuesses: {
+            timePlayed: 11766,
+            pathChoices: {
                 left: 47,
                 right: 81,
             },
+            gameCompletions: 128,
             numberOfDeaths: 0,
             riddleGuesses: {
                 correct: 128,
@@ -581,8 +583,8 @@ app.post("/user/stats", ensureAuthenticated, async (req, res) => {
         const userId = req.session.user.id;
         const {
             timePlayed,
-            choseLeft,
-            choseRight,
+            pathChoices,
+            gameCompletions,
             numberOfDeaths,
             riddleGuesses,
             audioFiles,
@@ -595,8 +597,9 @@ app.post("/user/stats", ensureAuthenticated, async (req, res) => {
             {
                 $inc: {
                     timePlayed: timePlayed || 0,
-                    choseLeft: choseLeft || 0,
-                    choseRight: choseRight || 0,
+                    "pathChoices.left": pathChoices?.left || 0,
+                    "pathChoices.right": pathChoices?.right || 0,
+                    gameCompletions: gameCompletions || 0,
                     numberOfDeaths: numberOfDeaths || 0,
                     "riddleGuesses.correct": riddleGuesses?.correct || 0,
                     "riddleGuesses.incorrect": riddleGuesses?.incorrect || 0,
