@@ -97,7 +97,7 @@ async function getStatTracker(userId, userType) {
     try {
         if (userType !== 'admin') {
             console.log(`Attempting to find stat tracker for user ID: ${userId}`);
-            let statTracker = await UserStats.findOne({ UserID: userId });
+            let statTracker = await UserStats.findOne({ user: userId });
 
             if (!statTracker) {
                 console.log(`No existing stat tracker, creating new one...`);
@@ -138,12 +138,12 @@ async function getStatTracker(userId, userType) {
                         boss: 0,
                     },
                 });
-                console.log(`New stat tracker created with ID: ${userConsole._id}`);
+                console.log(`New stat tracker created with ID: ${statTracker._id}`);
             } else {
                 console.log(`Stats entry found for user ID: ${userId}`);
             }
 
-            return userStats;
+            return statTracker;
         }
         console.log(`No stats for role "${userRole}" necessary.`);
         return null;
