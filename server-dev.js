@@ -88,56 +88,52 @@ async function getUserConsole(userId, userType) {
 
 async function getStatTracker(userId, userType) {
     try {
-        if (userType !== 'admin') {
-            console.log(`Attempting to find stat tracker for user ID: ${userId}`);
-            let statTracker = await UserStats.findOne({ UserID: userId });
+        console.log(`Attempting to find stat tracker for user ID: ${userId}`);
+        let statTracker = await UserStats.findOne({ UserID: userId });
 
-            if (!statTracker) {
-                console.log(`No existing stat tracker, creating new one...`);
-                statTracker = await UserStats.create({
-                    UserID: userId,
-                    timePlayed: 0,
-                    riddleGuesses: {
-                        left: 0,
-                        right: 0,
-                    },
-                    gameCompletions: 0,
-                    numberOfDeaths: 0,
-                    riddleGuesses: {
-                        correct: 0,
-                        incorrect: 0,
-                    },
-                    audioFiles: {
-                        hit: 0,
-                        miss: 0,
-                        stamina: 0,
-                        damaged: 0,
-                        eating: 0,
-                        death: 0,
-                    },
-                    commands: {
-                        startGame: 0,
-                        pause: 0,
-                        repeat: 0,
-                        endGame: 0,
-                        speedUp: 0,
-                        slowDown: 0,
-                        restart: 0,
-                        clear: 0,
-                        rewind: 0,
-                        help: 0,
-                    },
-                    heatmap: {
-                        forestObstacle: 0,
-                        forestFight: 0,
-                        riddle: 0,
-                        boss: 0,
-                    },
-                });
-                console.log(`New stat tracker created with ID: ${statTracker._id}`);
-            } else {
-                console.log(`Stats entry found for user ID: ${userId}`);
-            }
+        if (!statTracker) {
+            console.log(`No existing stat tracker, creating new one...`);
+            statTracker = await UserStats.create({
+                UserID: userId,
+                timePlayed: 0,
+                riddleGuesses: {
+                    left: 0,
+                    right: 0,
+                },
+                gameCompletions: 0,
+                numberOfDeaths: 0,
+                riddleGuesses: {
+                    correct: 0,
+                    incorrect: 0,
+                },
+                audioFiles: {
+                    hit: 0,
+                    miss: 0,
+                    stamina: 0,
+                    damaged: 0,
+                    eating: 0,
+                    death: 0,
+                },
+                commands: {
+                    startGame: 0,
+                    pause: 0,
+                    repeat: 0,
+                    endGame: 0,
+                    speedUp: 0,
+                    slowDown: 0,
+                    restart: 0,
+                    clear: 0,
+                    rewind: 0,
+                    help: 0,
+                },
+                heatmap: {
+                    forestObstacle: 0,
+                    forestFight: 0,
+                    riddle: 0,
+                    boss: 0,
+                },
+            });
+            console.log(`New stat tracker created with ID: ${statTracker._id}`);
 
             return statTracker;
         }
@@ -285,13 +281,14 @@ app.post("/login", express.json(), async (req, res) => {
                 message: "invalid credentials"
             }); 
         }
-        // Only create/get console + stat tracker for regular users
+        // Only create/get console for regular users
         if (user.UserType !== 'admin') {
             await getUserConsole(user._id, user.UserType);
-
-            await getStatTracker(user._id, user.UserType);
         }
         console.log('console loaded');
+
+        // Creates stat tracker
+        await getStatTracker(user._id, user.UserType);
         console.log('Stat tracker loaded');
 
         // assigning sessions to the user while allowing them to login 
@@ -484,8 +481,6 @@ app.post('/logout', ensureAuthenticated, async (req, res) => {
             }
         }
 
-        // TODO Clear stat tracker?
-
         // Clear session data
         if (req.session) {
             await new Promise((resolve, reject) => {
@@ -571,7 +566,7 @@ app.get('/user/stats', ensureAuthenticated, async (req, res) => {
         res.status(200).json({stats});
 
     } catch (error) {
-        console.error('Error posting to stat tracker : ', error);
+        console.error('Error getting to stat tracker : ', error);
         res.status(500).send('Internal Server Error');
     }
 });
@@ -634,6 +629,86 @@ app.post("/user/stats", ensureAuthenticated, async (req, res) => {
         res.status(200).send("User stats updated successfully");
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+});
+
+// Get site-wide stats
+app.get('/site/stats', async (req, res) => {
+    try {
+        // Combines all the fields into the collected site-wide stats
+        const stats = await UserStats.aggregate([
+            {
+                $group: {
+                    _id: null, // Groups all users together
+                    totalTimePlayed: { $sum: "$timePlayed" },
+                    totalPathChoicesLeft: { $sum: "$pathChoices.left" },
+                    totalPathChoicesRight: { $sum: "$pathChoices.right" },
+                    totalGameCompletions: { $sum: "$gameCompletions" },
+                    totalNumberOfDeaths: { $sum: "$numberOfDeaths" },
+                    totalRiddleGuessesCorrect: { $sum: "$riddleGuesses.correct" },
+                    totalRiddleGuessesIncorrect: { $sum: "$riddleGuesses.incorrect" },
+                    totalAudioFilesHit: { $sum: "$audioFiles.hit" },
+                    totalAudioFilesMiss: { $sum: "$audioFiles.miss" },
+                    totalAudioFilesStamina: { $sum: "$audioFiles.stamina" },
+                    totalAudioFilesDamaged: { $sum: "$audioFiles.damaged" },
+                    totalAudioFilesEating: { $sum: "$audioFiles.eating" },
+                    totalAudioFilesDeath: { $sum: "$audioFiles.death" },
+                    totalCommandsStartGame: { $sum: "$commands.startGame" },
+                    totalCommandsPause: { $sum: "$commands.pause" },
+                    totalCommandsRepeat: { $sum: "$commands.repeat" },
+                    totalCommandsEndGame: { $sum: "$commands.endGame" },
+                    totalCommandsSpeedUp: { $sum: "$commands.speedUp" },
+                    totalCommandsSlowDown: { $sum: "$commands.slowDown" },
+                    totalCommandsRestart: { $sum: "$commands.restart" },
+                    totalCommandsClear: { $sum: "$commands.clear" },
+                    totalCommandsRewind: { $sum: "$commands.rewind" },
+                    totalCommandsHelp: { $sum: "$commands.help" },
+                    totalHeatmapForestObstacle: { $sum: "$heatmap.forestObstacle" },
+                    totalHeatmapForestFight: { $sum: "$heatmap.forestFight" },
+                    totalHeatmapRiddle: { $sum: "$heatmap.riddle" },
+                    totalHeatmapBoss: { $sum: "$heatmap.boss" }
+                }
+            }
+        ]);
+
+        // Validates that there are stats in the db
+        if (!stats || stats.length === 0) {
+            return res.status(404).send('No stats found');
+        }else{
+            // Finds the users with the highest timePlayed and gameCompletions
+            const mostPlayed = await UserStats.findOne().sort({ timePlayed: -1 }).limit(1);
+            const mostCompletions = await UserStats.findOne().sort({ gameCompletions: -1 }).limit(1);
+
+            if (!mostPlayed) {
+                return res.status(404).send('Most played value found');
+            }
+            if (!mostCompletions) {
+                return res.status(404).send('Most completions value found');
+            }
+
+            // Retrieve the names of the top players
+            const userMostPlayed = await User.findById(mostPlayed.userId);
+            const userMostCompletions = await User.findById(mostCompletions.userId);
+
+            // Gathers the site-wide, mostPlayed and mostCompletions stats
+            const response = {
+                siteStats: stats[0],
+                mostPlayed: {
+                    timePlayed: mostPlayed.timePlayed,
+                    name: userMostPlayed.Name
+                },
+                mostCompletions: {
+                    timePlayed: mostCompletions.timePlayed,
+                    name: userMostCompletions.Name
+                }
+            };
+
+            res.status(200).json(response);
+        }
+
+    } catch (error) {
+        console.error('Error fetching site-wide stats: ', error);
+        res.status(500).send('Internal Server Error');
     }
 });
 

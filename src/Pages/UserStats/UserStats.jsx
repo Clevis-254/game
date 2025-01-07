@@ -1,7 +1,45 @@
-import React from 'react';
+import React, { useState, useEffect } from "react";
 import { Banner } from "../Banner.jsx";
 
 export function UserStats() {
+    const [stats, setStats] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const response = await fetch("/site/stats", {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error("Failed to fetch stats.");
+                }
+
+                const data = await response.json();
+                setStats(data.stats);
+                setLoading(false);
+            } catch (err) {
+                setError(err.message);
+                setLoading(false);
+            }
+        };
+
+        fetchStats();
+    }, []);
+
+    if (loading) {
+        return <p>Loading stats...</p>;
+    }
+
+    if (error) {
+        return <p>Error loading stats: {error}</p>;
+    }
+
     return (
         <>
             <Banner />
@@ -12,7 +50,7 @@ export function UserStats() {
             <div className="statsContainer">
                 <div className="timePlayed">
                     <h2 className="text-uppercase">Time Played</h2>
-                    <h4>00:00:00</h4>
+                    <h4>{stats.timePlayed}</h4>
                 </div>
             </div>
 
