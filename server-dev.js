@@ -8,13 +8,10 @@ import session from 'express-session';
 import bcrypt, { compare } from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import nodemailer from 'nodemailer';
-//importing the user schema 
 import User from './models/UserSchema.js';
 import error from "express/lib/view.js";
 import path from "path";
 
-
-//importing express into the server
 const app = express();
 
 app.use(bodyParser.json())
@@ -33,30 +30,60 @@ const vite = await createServer({
     },
     appType: 'custom',
 });
-// creating authentication session
-// Update your session configuration
+
 app.use(session({
     secret: 'c5afbf2a6d07b53a8ac4f3ac154d2138bf4a89a39037d8caf47db0ed6d8469e08b94644a1c9d47852fe7ac9939bbaec7c8c7a23113c8a824cd27b6e0912b7804',
     resave: false,
     saveUninitialized: false,
     cookie: {
-        maxAge: 1000 * 60 * 60 * 24,  // 1 day
-        secure: false,  // Changed to false for development
+        maxAge: 1000 * 60 * 60 * 24,
+        secure: false,
         httpOnly: true
     }
 }));
-// MongoDB Linking Test Code
-const dbURI = "mongodb+srv://demo_user:321@cluster0.dayzc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-// const dbURI = "mongodb://localhost:27017/projectDatabase"
 
-// Updated MongoDB connection using async/await
-try {
-    await mongoose.connect(dbURI);
-    mongoose.set("debug", true)
-    console.log("Connected to MongoDB");
-} catch (error) {
-    console.error("Error connecting to MongoDB:", error);
+const dbURI = "mongodb+srv://demo_user:321@cluster0.dayzc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+
+// Database initialization function
+async function initializeDatabase() {
+    try {
+        // First connect to MongoDB
+        await mongoose.connect(dbURI);
+        mongoose.set("debug", true);
+        console.log("Connected to MongoDB");
+
+        // Clear all existing data
+        console.log("Clearing existing database collections...");
+        await Promise.all([
+            User.deleteMany({}),
+            consoleLogHistorySchema.deleteMany({})
+        ]);
+        console.log("Database collections cleared successfully");
+
+        // Create initial users
+        const user = await User.create({
+            Name: "Gikenyi",
+            email: "s@email.com",
+            Password: "1234"
+        });
+
+        const admin = await User.create({
+            Name: "User",
+            email: "admin@email.com",
+            Password: "admin1234",
+            UserType: "admin"
+        });
+
+        console.log("Initial users created successfully");
+
+    } catch (error) {
+        console.error("Database initialization error:", error);
+        process.exit(1); // Exit if database initialization fails
+    }
 }
+
+// Initialize database before starting the server
+await initializeDatabase();
 // making console so that it can use live data instead
 // Get or create user console if it doesn't exist
 // getUserConsole function
