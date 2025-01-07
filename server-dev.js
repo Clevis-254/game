@@ -246,7 +246,7 @@ app.post("/post_clear_console", async (req, res) => {
 app.use(vite.middlewares);
 
 // This will render all pages React code. The routing specific to the page is in the App.jsx file.
-app.get("*", async (req, res, next) => {
+app.get("*", ensureAuthenticated , async (req, res, next) => {
     console.log(`Generic GET called with the url :  ${req.originalUrl}`)
     try{
 
