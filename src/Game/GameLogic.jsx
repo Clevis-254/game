@@ -58,7 +58,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         musicAudio.current.addEventListener("ended", handleMusicEnd)
 
 
-
+        // Remove listeners when we are done with them
         return () => {
             audioRef.current.removeEventListener("ended", handleAudioEnd)
             musicAudio.current.removeEventListener("ended", handleMusicEnd)
@@ -70,10 +70,10 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     function playSoundEffect(url){
         const audio = new Audio(url)
 
-        // Play the audio
+        // Play the audio, then the object will cease to exist as the reference only exists in the func
         audio.play().catch(err => {
-            console.error("Error playing audio:", err);
-        });
+            console.error("Error playing audio:", err)
+        })
     }
 
     // audio... functions for handling playing of audio + some transcript code
@@ -93,12 +93,14 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             });
         })
     }
+    // On playing audio also play the transcript from the left off point
     const audioPlay = () => {
         if (audioRef.current) {
             audioRef.current.play();
             if(transcriptNameRef.current){transcriptOutput(transcriptNameRef.current)}
         }
     }
+    // Pause the game and the transcript
     const audioPause = () => {
         if (audioRef.current) {
             audioRef.current.pause();
@@ -119,6 +121,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                 = Math.max(0.5, audioRef.current.playbackRate - 0.5);
         }
     }
+    // Rewind the audio and set the vars to get the transcript function to rewind
     const audioRewind = (seconds) => {
         if (audioRef.current) {
             audioRef.current.currentTime = Math.max(0, audioRef.current.currentTime - seconds);
@@ -248,6 +251,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                                         playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
                                 }
                                 break
+                            // TODO STAT TRACK : amount of times musashi fell / picked correctly etc
                             case "forestObstacle":
                                 if (consoleToGameCommandRef.current === "hint") {
                                     forestRight()
@@ -426,7 +430,6 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     async function riddleStart(){
         await new Promise(async (resolve, reject) => {
             cancelGame = reject;
-            console.log("we riddlin'")
 
             audioRef.current.src = "./src/Audio/Narration/riddleIntro.mp3"
             transcriptOutput("riddleIntro")
@@ -502,6 +505,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         })
     }
 
+    // Start final fight
     async function finale(){
         await new Promise(async (resolve, reject) => {
             cancelGame = reject;
@@ -517,6 +521,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             resolve()
         })
     }
+
+    // After final fight
     async function ending(){
         await new Promise(async (resolve, reject) => {
             cancelGame = reject;
@@ -533,7 +539,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         })
     }
 
-            // TODO STAT TRACK : Alternative place(s) to put the heatmap data instead of the switch, I
+    // TODO STAT TRACK : Alternative place(s) to put the heatmap data instead of the switch, I
     //  would personally recommend the switch to keep code cleaner and keep heatmap tracking code bundled
     // Picked left on forest branching choice (fight)
     async function forestLeft(){
@@ -557,6 +563,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     let forestObstacleProgress = useRef(0)
     // Picked right on forest branching choice (deal with trap)
     let obstacleStamina = useRef(5)
+    // Cliff obstacle
     async function forestRight(){
         postTextToConsole("You picked 'right'", "")
         await new Promise(async (resolve, reject) => {
@@ -791,6 +798,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         }
         // If the enemy is stunned, don't return a move
         if (stunned.current === 2){
+            // TODO STAT TRACK : alternate place to put enemy stunned count
             console.log("ENEMY AI : enemy stunned")
             return ""
         }
