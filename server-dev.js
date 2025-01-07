@@ -42,15 +42,25 @@ app.use(session({
     }
 }));
 
-const dbURI = "mongodb+srv://demo_user:321@cluster0.dayzc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const dbURI = "mongodb+srv://Admin_1:lLrnAwIbvkI7Hgj9@clustergroup8.o6myn.mongodb.net/dev";  // Added /dev to create dev database
 
 // Database initialization function
 async function initializeDatabase() {
     try {
-        // First connect to MongoDB
-        await mongoose.connect(dbURI);
+        // Connect to MongoDB with dev database
+        await mongoose.connect(dbURI, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
         mongoose.set("debug", true);
-        console.log("Connected to MongoDB");
+        console.log("Connected to MongoDB - Dev Database");
+
+        // Get reference to the database
+        const db = mongoose.connection.db;
+        
+        // List existing collections
+        const collections = await db.listCollections().toArray();
+        console.log("Existing collections:", collections.map(c => c.name));
 
         // Clear all existing data
         console.log("Clearing existing database collections...");
@@ -75,13 +85,21 @@ async function initializeDatabase() {
         });
 
         console.log("Initial users created successfully");
+        
+        // Log the current state of the database
+        const userCount = await User.countDocuments();
+        const consoleCount = await consoleLogHistorySchema.countDocuments();
+        console.log(`Database status:
+        - Database name: ${db.databaseName}
+        - Users created: ${userCount}
+        - Console records: ${consoleCount}`);
 
     } catch (error) {
         console.error("Database initialization error:", error);
+        console.error("Error details:", error.message);
         process.exit(1); // Exit if database initialization fails
     }
 }
-
 // Initialize database before starting the server
 await initializeDatabase();
 // making console so that it can use live data instead
@@ -118,26 +136,6 @@ async function getUserConsole(userId, userType) {
         throw error;
     }
 }
-// user samples 
-async function save() {
-    try {
-        const user = await User.create({
-            Name: "Gikenyi",
-            email: "s@email.com",
-            Password: "1234"
-        });
-        const admin = await User.create({
-            Name: "User",
-            email: "admin@email.com",
-            Password: "admin1234",
-            UserType: "admin"
-        });
-    } catch (error) {
-        console.error("Error creating user:", error);
-    }
-}
-save();
-
 // authenticated function. checks whether you are authenticated or not
 function ensureAuthenticated(req, res, next) {
     const whitelistedPaths = ['/signup', '/forgot-password', '/reset-password'];
@@ -180,7 +178,7 @@ app.get("/login", async (req, res) => {
 app.post("/login", express.json(), async (req, res) => {
     try {
         const { username, password } = req.body;
-        console.log("Received login data:", req.body);
+        // console.log("Received login data:", req.body); hashed for security reasons
         
         const user = await User.findOne({email: username});
 
