@@ -152,12 +152,21 @@ async function getStatTracker(userId, userType) {
                     incorrect: 0,
                 },
                 audioFiles: {
+                    inputNotification: 0,
                     hit: 0,
-                    miss: 0,
-                    stamina: 0,
-                    damaged: 0,
-                    eating: 0,
                     death: 0,
+                    intro: 0,
+                    forestIntro: 0,
+                    forestFight: 0,
+                    battleMusic: 0,
+                    forestObstacle: 0,
+                    riddleIntro: 0,
+                    notHere: 0,
+                    ahRiddle: 0,
+                    riddle: 0,
+                    openDoor: 0,
+                    finale: 0,
+                    ending: 0,
                 },
                 commands: {
                     startGame: 0,
@@ -232,12 +241,21 @@ async function save() {
                 incorrect: 6,
             },
             audioFiles: {
-                hit: 12,
-                miss: 6,
-                stamina: 20,
-                damaged: 21,
-                eating: 3,
-                death: 1,
+                inputNotification: 45,
+                hit: 34,
+                death: 34,
+                intro: 25,
+                forestIntro: 25,
+                forestFight: 23,
+                battleMusic: 23,
+                forestObstacle: 23,
+                riddleIntro: 34,
+                notHere: 23,
+                ahRiddle: 23,
+                riddle: 25,
+                openDoor: 22,
+                finale: 21,
+                ending: 10,
             },
             commands: {
                 startGame: 3,
@@ -275,12 +293,21 @@ async function save() {
                 incorrect: 0,
             },
             audioFiles: {
-                hit: 237,
-                miss: 0,
-                stamina: 237,
-                damaged: 0,
-                eating: 893,
-                death: 0,
+                inputNotification: 425,
+                hit: 134,
+                death: 134,
+                intro: 125,
+                forestIntro: 125,
+                forestFight: 123,
+                battleMusic: 123,
+                forestObstacle: 123,
+                riddleIntro: 134,
+                notHere: 123,
+                ahRiddle: 123,
+                riddle: 125,
+                openDoor: 122,
+                finale: 121,
+                ending: 128,
             },
             commands: {
                 startGame: 128,
@@ -700,12 +727,21 @@ app.post("/user/stats", ensureAuthenticated, async (req, res) => {
         }
 
         if (audioFiles) {
+            if (audioFiles.inputNotification) updateFields["audioFiles.inputNotification"] = audioFiles.inputNotification;
             if (audioFiles.hit) updateFields["audioFiles.hit"] = audioFiles.hit;
-            if (audioFiles.miss) updateFields["audioFiles.miss"] = audioFiles.miss;
-            if (audioFiles.stamina) updateFields["audioFiles.stamina"] = audioFiles.stamina;
-            if (audioFiles.damaged) updateFields["audioFiles.damaged"] = audioFiles.damaged;
-            if (audioFiles.eating) updateFields["audioFiles.eating"] = audioFiles.eating;
             if (audioFiles.death) updateFields["audioFiles.death"] = audioFiles.death;
+            if (audioFiles.intro) updateFields["audioFiles.intro"] = audioFiles.intro;
+            if (audioFiles.forestIntro) updateFields["audioFiles.forestIntro"] = audioFiles.forestIntro;
+            if (audioFiles.forestFight) updateFields["audioFiles.forestFight"] = audioFiles.forestFight;
+            if (audioFiles.battleMusic) updateFields["audioFiles.battleMusic"] = audioFiles.battleMusic;
+            if (audioFiles.forestObstacle) updateFields["audioFiles.forestObstacle"] = audioFiles.forestObstacle;
+            if (audioFiles.riddleIntro) updateFields["audioFiles.riddleIntro"] = audioFiles.riddleIntro;
+            if (audioFiles.notHere) updateFields["audioFiles.notHere"] = audioFiles.notHere;
+            if (audioFiles.ahRiddle) updateFields["audioFiles.ahRiddle"] = audioFiles.ahRiddle;
+            if (audioFiles.riddle) updateFields["audioFiles.riddle"] = audioFiles.riddle;
+            if (audioFiles.openDoor) updateFields["audioFiles.openDoor"] = audioFiles.openDoor;
+            if (audioFiles.finale) updateFields["audioFiles.finale"] = audioFiles.finale;
+            if (audioFiles.ending) updateFields["audioFiles.ending"] = audioFiles.ending;
         }
 
         if (commands) {
@@ -761,12 +797,21 @@ app.get('/site/stats', async (req, res) => {
                     totalNumberOfDeaths: { $sum: "$numberOfDeaths" },
                     totalRiddleGuessesCorrect: { $sum: "$riddleGuesses.correct" },
                     totalRiddleGuessesIncorrect: { $sum: "$riddleGuesses.incorrect" },
+                    totalInputNotification: { $sum: "$audioFiles.inputNotification" },
                     totalHit: { $sum: "$audioFiles.hit" },
-                    totalMiss: { $sum: "$audioFiles.miss" },
-                    totalStamina: { $sum: "$audioFiles.stamina" },
-                    totalDamaged: { $sum: "$audioFiles.damaged" },
-                    totalEating: { $sum: "$audioFiles.eating" },
                     totalDeath: { $sum: "$audioFiles.death" },
+                    totalIntro: { $sum: "$audioFiles.intro" },
+                    totalForestIntro: { $sum: "$audioFiles.forestIntro" },
+                    totalForestFight: { $sum: "$audioFiles.forestFight" },
+                    totalBattleMusic: { $sum: "$audioFiles.battleMusic" },
+                    totalForestObstacle: { $sum: "$audioFiles.forestObstacle" },
+                    totalRiddleIntro: { $sum: "$audioFiles.riddleIntro" },
+                    totalNotHere: { $sum: "$audioFiles.notHere" },
+                    totalAhRiddle: { $sum: "$audioFiles.ahRiddle" },
+                    totalRiddle: { $sum: "$audioFiles.riddle" },
+                    totalOpenDoor: { $sum: "$audioFiles.openDoor" },
+                    totalFinale: { $sum: "$audioFiles.finale" },
+                    totalEnding: { $sum: "$audioFiles.ending" },
                     totalStartGame: { $sum: "$commands.startGame" },
                     totalPause: { $sum: "$commands.pause" },
                     totalPlay: { $sum: "$commands.play" },
@@ -789,12 +834,21 @@ app.get('/site/stats', async (req, res) => {
                 $addFields: {
                     totalAudioPlayed: {
                         $add: [
+                            "$totalInputNotification",
                             "$totalHit",
-                            "$totalMiss",
-                            "$totalStamina",
-                            "$totalDamaged",
-                            "$totalEating",
-                            "$totalDeath"
+                            "$totalDeath",
+                            "$totalIntro",
+                            "$totalForestIntro",
+                            "$totalForestFight",
+                            "$totalBattleMusic",
+                            "$totalForestObstacle",
+                            "$totalRiddleIntro",
+                            "$totalNotHere",
+                            "$totalAhRiddle",
+                            "$totalRiddle",
+                            "$totalOpenDoor",
+                            "$totalFinale",
+                            "$totalEnding"
                         ]
                     },
                     totalCommandsUsed: {

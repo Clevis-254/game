@@ -129,12 +129,21 @@ export function UserStats() {
             <div className="statsContainer">
                 <div className="statSection">
                     <h2 className="text-uppercase">Audio File Play Count</h2>
+                    <h4>inputNotification: {stats.stats.totalInputNotification}</h4>
                     <h4>hit: {stats.stats.totalHit}</h4>
-                    <h4>miss: {stats.stats.totalMiss}</h4>
-                    <h4>damaged: {stats.stats.totalDamaged}</h4>
-                    <h4>stamina: {stats.stats.totalStamina}</h4>
-                    <h4>eating: {stats.stats.totalEating}</h4>
                     <h4>death: {stats.stats.totalDeath}</h4>
+                    <h4>intro: {stats.stats.totalIntro}</h4>
+                    <h4>forestIntro: {stats.stats.totalForestIntro}</h4>
+                    <h4>forestFight: {stats.stats.totalForestFight}</h4>
+                    <h4>battleMusic: {stats.stats.totalBattleMusic}</h4>
+                    <h4>forestObstacle: {stats.stats.totalForestObstacle}</h4>
+                    <h4>riddleIntro: {stats.stats.totalRiddleIntro}</h4>
+                    <h4>notHere: {stats.stats.totalNotHere}</h4>
+                    <h4>ahRiddle: {stats.stats.totalAhRiddle}</h4>
+                    <h4>riddle: {stats.stats.totalRiddle}</h4>
+                    <h4>openDoor: {stats.stats.totalOpenDoor}</h4>
+                    <h4>finale: {stats.stats.totalFinale}</h4>
+                    <h4>ending: {stats.stats.totalEnding}</h4>
                 </div>
 
                 <div className="statSection">

@@ -113,9 +113,6 @@ forwardRef(function Console({transcriptRef, commandToGameTrigger,
     }
 
 
-
-    // TODO STAT TRACK : Number of commands sent in by user, however note when implementing we dont want
-    //  to track when the user doesn't input anything which is handled at the very bottom in the default case.
     // Function to add a user console input client side
     function new_console_input() {
 
@@ -128,8 +125,6 @@ forwardRef(function Console({transcriptRef, commandToGameTrigger,
         const console_input_text = console_input_box.value
         console_input_box.value = ""
 
-        // TODO STAT TRACK : Number of times a command is called can be done here. For the case stack at the bottom
-        //  just add the line(s) to track below but dont add a break so it still falls through.
         switch (console_input_text) {
             case "clear":
                 incrementStat("clear"); // Tracks command use
@@ -188,9 +183,6 @@ forwardRef(function Console({transcriptRef, commandToGameTrigger,
                 commandToGame(console_input_text)
                 break
             case "slow down":
-            // TODO STAT TRACK : If I implement rewinding for custom seconds (unlikely) then potentially add the total
-            //  seconds rewound as a stat.
-            // TODO : make it so rewind can be "rewind x" for x seconds. Might need to pre-process or use an IF for this.
                 incrementStat("slowDown"); // Tracks command use
                 post_new_input(console_input_text, "User")
                 commandToGame(console_input_text)
@@ -222,7 +214,6 @@ forwardRef(function Console({transcriptRef, commandToGameTrigger,
         scrollConsoleToBottom()
     }
 
-    // TODO STAT TRACK : Total messages sent to the console per user and overall
     // POST to db the new message
     function post_new_input(message, speaker, isTranscript) {
         if(speaker !== "User" && !isTranscript) speakText(message)
