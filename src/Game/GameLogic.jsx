@@ -27,6 +27,33 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     const soundEffectAudio = useRef(null)
     const musicAudio = useRef(null)
 
+    // Increments the number of times an audio file is played
+    async function incrementAudioFile(audioFileName) {
+        try {
+            // Construct the object in the right format for POST request
+            const audioFiles = {
+                [audioFileName]: 1
+            };
+
+            // Make the POST request to increment the stat
+            const response = await fetch("/user/stats", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    audioFiles,
+                }),
+            });
+
+            if (!response.ok) {
+                console.error(`Failed to increment audio file stat: ${response.statusText}`);
+            }
+        } catch (error) {
+            console.error("Error:", error);
+        }
+    }
+
     // When the page first loads, create an audio player not attached to the DOM, so it isn't visible.
     useEffect(() => {
         audioRef.current = document.createElement("audio")
@@ -121,33 +148,6 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             audioRef.current.currentTime = Math.max(0, audioRef.current.currentTime - seconds);
             transcriptInterrupt.current = true
             transcriptRewindSeconds.current = seconds
-        }
-    }
-
-    // Increments the number of times an audio file is played
-    async function incrementAudioFile(audioFileName) {
-        try {
-            // Construct the object in the right format for POST request
-            const audioFiles = {
-                [audioFileName]: 1
-            };
-
-            // Make the POST request to increment the stat
-            const response = await fetch("/user/stats", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    audioFiles,
-                }),
-            });
-
-            if (!response.ok) {
-                console.error(`Failed to increment audio file stat: ${response.statusText}`);
-            }
-        } catch (error) {
-            console.error("Error:", error);
         }
     }
 
@@ -290,6 +290,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                                         playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
                                         incrementAudioFile("inputNotification")
                                     } else {
+                                        updateStat(0, 0, 1) // +1 death
                                         postTextToConsole("Musashi was knocked into the ocean! Game Over.", "")
                                         endGame(true)
                                     }
@@ -321,8 +322,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         }
     }
 
-    // Posts time played in seconds to server
-    async function updateTimePlayed(gameSeconds){
+    // Posts time played in seconds, number of game completions and deaths to server
+    async function updateStat(gameSeconds, completions, deaths){
         try {
             const response = await fetch("/user/stats", {
                 method: "POST",
@@ -331,6 +332,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                 },
                 body: JSON.stringify({
                     timePlayed: gameSeconds,
+                    gameCompletions: completions,
+                    numberOfDeaths: deaths,
                 }),
             });
 
@@ -356,7 +359,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
         // Calculates how long the game lasted in seconds
         const elapsedTime = Math.floor((new Date() - startTime.current) / 1000)
-        updateTimePlayed(elapsedTime)
+        updateStat(elapsedTime, 0, 0)
 
         // Just to make sure the transcript is printed before this.
         await new Promise(resolve => setTimeout(resolve, 300))
@@ -375,7 +378,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         const handleBeforeUnload = () => {
             if (gameStarted.current) {
                 const elapsedTime = Math.floor((new Date() - startTime.current) / 1000)
-                updateTimePlayed(elapsedTime)
+                updateStat(elapsedTime, 0, 0)
             }
         }
         window.addEventListener('beforeunload', handleBeforeUnload)
@@ -618,7 +621,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         await new Promise(async (resolve, reject) => {
 
             // TODO jack
-            // NUMBER OF COMPLETIONS
+            updateStat(0 , 1, 0) // +1 game completion
             // END BOSS TIME
 
             cancelGame = reject;
@@ -823,7 +826,6 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
         // If the enemy has been killed
         if (enemyHealth.current <= 0) {
-            // TODO jack
             waitingForUserInput.current = ""
             postTextToConsole("You killed your foe and won the fight!", "")
             // Only two opponents in the game so 1 = Forest, 2 = Ending
@@ -863,7 +865,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
         // If the player has been killed
         if (playerHealth.current <= 0) {
-            // TODO jack
+            updateStat(0, 0, 1) // +1 death
             playSoundEffect("src/Audio/Game Sounds/male-death-sound.mp3")
             incrementAudioFile("inputNotification")
             postTextToConsole("You have been killed and lost the fight. Game over.", "")
