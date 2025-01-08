@@ -151,6 +151,27 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         }
     }
 
+    // Increments riddle guesses
+    async function updateRiddleGuesses(correct, incorrect) {
+        try {
+            const response = await fetch("/user/stats", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    riddleGuesses: { correct, incorrect }
+                }),
+            });
+
+            if (!response.ok) {
+                console.error(`Failed to update stats: ${response.statusText}`);
+            }
+        } catch (error) {
+            console.error("Error:", error);
+        }
+    }
+
     // useEffect to get commands from the console to gameLogic
     // Uses a state variable to trigger this function, then uses a ref to change the value again
     // without re-rendering. Uses isInitialRenderConsoleToGame so it doesn't run on initial render
@@ -260,9 +281,11 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                                 switch (consoleToGameCommandRef.current) {
                                     case "door":
                                     case "a door":
+                                        updateRiddleGuesses(1, 0) // +1 correct guess
                                         riddleDoorOpen()
                                         break
                                     default:
+                                        updateRiddleGuesses(0, 1) // +1 incorrect guess
                                         postTextToConsole("That is not the answer. Guess again", "")
                                         await new Promise(resolve => setTimeout(resolve, 3000))
                                         playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
@@ -525,9 +548,6 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     // When the player is looking at the wrong spot on the wall
     async function riddleSearchWrong(){
         await new Promise(async (resolve, reject) => {
-
-            // TODO JACK INCORRECT Guess
-
             cancelGame = reject;
 
             waitingForUserInput.current = ""
@@ -547,8 +567,6 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     // When the player finds the riddle
     async function riddleFound(){
         await new Promise(async (resolve, reject) => {
-
-            // TODO JACK RIDDLE CORRECT
 
             cancelGame = reject;
 
