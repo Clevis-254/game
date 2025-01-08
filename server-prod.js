@@ -24,7 +24,6 @@ app.use(
     }),
 );
 
-
 //  middleware configurations
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -43,7 +42,9 @@ app.use(session({
 }));
 // MongoDB Linking Test Code
 // const dbURI = "mongodb+srv://demo_user:321@cluster0.dayzc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-const dbURI = "mongodb://localhost:27017/projectDatabase"
+// const dbURI = "mongodb://localhost:27017/projectDatabase"
+const dbURI = "mongodb+srv://Admin_1:lLrnAwIbvkI7Hgj9@clustergroup8.o6myn.mongodb.net/Prod"; // production database
+
 
 // Updated MongoDB connection using async/await
 try {

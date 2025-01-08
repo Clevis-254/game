@@ -678,6 +678,56 @@ function Features() {
     ] })
   ] }) }) });
 }
+function speakText(text) {
+  if (!window.speechSynthesis) {
+    console.warn("SpeechSynthesis not supported by this browser.");
+    return;
+  }
+  const ttsEnabled = localStorage.getItem("ttsEnabled") === "true";
+  if (!ttsEnabled) {
+    console.warn("TTS is disabled.");
+    return;
+  }
+  const utterance = new SpeechSynthesisUtterance(text);
+  const storedVoiceName = localStorage.getItem("ttsVoice") || null;
+  const storedPitch = parseFloat(localStorage.getItem("ttsPitch")) || 1;
+  const storedRate = parseFloat(localStorage.getItem("ttsRate")) || 1;
+  const storedVolume = parseFloat(localStorage.getItem("ttsVolume")) || 1;
+  const voices = window.speechSynthesis.getVoices();
+  if (storedVoiceName && voices.length > 0) {
+    const selectedVoice = voices.find((voice) => voice.name === storedVoiceName);
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+    }
+  }
+  utterance.pitch = storedPitch;
+  utterance.rate = storedRate;
+  utterance.volume = storedVolume;
+  window.speechSynthesis.speak(utterance);
+}
+function setUserTTSPreferences({ voiceName, pitch, rate, volume, enabled }) {
+  if (typeof voiceName === "string") {
+    localStorage.setItem("ttsVoice", voiceName);
+  }
+  if (typeof pitch === "number") {
+    localStorage.setItem("ttsPitch", pitch.toString());
+  }
+  if (typeof rate === "number") {
+    localStorage.setItem("ttsRate", rate.toString());
+  }
+  if (typeof volume === "number") {
+    localStorage.setItem("ttsVolume", volume.toString());
+  }
+  if (typeof enabled === "boolean") {
+    localStorage.setItem("ttsEnabled", enabled.toString());
+  }
+}
+function getAvailableVoices() {
+  if (!window.speechSynthesis) {
+    return [];
+  }
+  return window.speechSynthesis.getVoices();
+}
 const Console = forwardRef(function Console2({
   transcriptRef,
   commandToGameTrigger,
@@ -686,14 +736,17 @@ const Console = forwardRef(function Console2({
 }, ref) {
   useImperativeHandle(ref, () => {
     return {
-      callPostToConsole: (message, speaker) => {
-        post_new_input(message, speaker);
+      callPostToConsole: (message, speaker, isTranscript) => {
+        post_new_input(message, speaker, isTranscript);
       }
     };
   });
   const BASEURL = "http://localhost:4173";
   const inputRef = useRef(null);
   const transcriptContainerRef = useRef(null);
+  useEffect(() => {
+    fetchConsoleHistory();
+  }, []);
   const handleEnterKeyDown = (event) => {
     if (event.key === "Enter") {
       new_console_input();
@@ -731,7 +784,6 @@ const Console = forwardRef(function Console2({
   useEffect(() => {
     scrollConsoleToBottom();
   }, [consoleText]);
-  const [historyLoaded, setHistoryLoaded] = useState(false);
   function commandToGame(command) {
     consoleToGameCommandRef.current = command;
     if (commandToGameTrigger === true) {
@@ -753,14 +805,12 @@ const Console = forwardRef(function Console2({
         clear_console_history();
         break;
       case "start game":
-        printUserInput();
-        const consoleResponse = "Starting game now...";
-        setConsoleText([...consoleText, `Console : ${consoleResponse}`]);
+        post_new_input(console_input_text, "User");
         commandToGame(console_input_text);
-        post_new_input(consoleResponse, "Console");
+        post_new_input("Starting game now...", "Console");
         break;
       case "help":
-        printUserInput();
+        post_new_input(console_input_text, "User");
         const outputList = [
           "Here is a list of all current commands",
           "- 'start game' : Starts the game from the last saved point",
@@ -774,9 +824,11 @@ const Console = forwardRef(function Console2({
           "- 'rewind' : Rewind 10 seconds of dialogue"
         ];
         for (let i in outputList) {
-          setConsoleText([...consoleText, `Console : ${outputList[i]}`]);
           post_new_input(outputList[i], "Console");
         }
+        break;
+      case "help combat":
+        post_new_input("In this game you will fight many enemies in battle. These battles are turn based.In battle you have four moves, slash, stab, parry slash and parry stab. Slash is a standard attack that can be parried withparry slash, stab is a move that you charge up on your initial turn and can then either go throughwith it  on your next turn and do lots of damage to your opponent or you can switch to slash to trick your opponent.Be wary however as if your opponent predicts this and picks parry slash then you will the stunned andmiss a turn. The same goes for if your opponent predicts you follow through and they pick parry stab.This makes stab a risky move but with high reward.", "");
         break;
       case "play":
       case "pause":
@@ -785,22 +837,24 @@ const Console = forwardRef(function Console2({
       case "rewind":
       case "end game":
       case "restart":
-        printUserInput();
+        post_new_input(console_input_text, "User");
         commandToGame(console_input_text);
         break;
       default:
         if (console_input_text !== "") {
-          printUserInput();
+          post_new_input(console_input_text, "User");
           commandToGame(console_input_text);
         }
     }
-    function printUserInput() {
-      setConsoleText([...consoleText, "User : " + console_input_text]);
-      post_new_input(console_input_text, "User");
-    }
     scrollConsoleToBottom();
   }
-  function post_new_input(message, speaker) {
+  function post_new_input(message, speaker, isTranscript) {
+    if (speaker !== "User" && !isTranscript) speakText(message);
+    if (speaker !== "") {
+      setConsoleText((prevConsoleText) => [...prevConsoleText, `${speaker} : ${message}`]);
+    } else {
+      setConsoleText((prevConsoleText) => [...prevConsoleText, `${message}`]);
+    }
     fetch("/post_console_history", {
       method: "POST",
       headers: {
@@ -812,13 +866,12 @@ const Console = forwardRef(function Console2({
         Speaker: speaker
       })
     });
-    fetchConsoleHistory();
   }
   function clear_console_history() {
+    setConsoleText([]);
     fetch("/post_clear_console", {
       method: "POST"
     });
-    setConsoleText([]);
   }
   const fetchConsoleHistory = async () => {
     try {
@@ -837,10 +890,6 @@ const Console = forwardRef(function Console2({
       console.error("Error fetching console history:", error);
     }
   };
-  if (historyLoaded === false) {
-    fetchConsoleHistory();
-    setHistoryLoaded(true);
-  }
   async function scrollConsoleToBottom() {
     if (transcriptContainerRef.current) {
       await new Promise((resolve) => setTimeout(resolve, 30));
@@ -867,7 +916,16 @@ function Story() {
 }
 let transcripts = {
   "Intro": "^^^^In Toxic Rōnin, you play as Miyamoto Musashi, a Japanese warrior who aspires to become the greatest swordsman alive. In a bout to gain prestige on his path to glory, Musashi kills two combatants of the distinguished Yoshioka School, singlehandedly disgracing their reputation. Now the warriors seek revenge against the wandering samurai who dared to dishonour them... ^^^^^^ The poison is spreading. I’m dripping with sweat, I feel lightheaded, there’s a stabbing in my stomach like I swallowed a pair of sai. I thought I could trust my hosts, but they were obviously loyal to the Yoshioka School. So much for the right of hospitality. We all ate from the same pot, so there must be an antidote. I need to get to their school... before it’s too late.",
-  "forestIntro": "^^^The entrance to the Yoshioka School is beyond the cave at the edge of these woods. Somehow I’ve got to get past their sentries. I did it once before, but with the state I’m in now I need to be more vigilant than ever. I can’t control the shaking of my limbs. Can’t even hold my katana still. This is going to be tough, but I’ve no choice if I want to see the sun rise tomorrow. Musashi stopped in his tracks. Though his usually acute senses were dulled somewhat, no poison could numb his instincts. Danger lay in the near vicinity to his left. The question was, did he have the strength to confront it, or should he take the risk of traversing the treacherous cliff on his right instead?"
+  "forestIntro": "^^^The entrance to the Yoshioka School is beyond the cave at the edge of these woods. Somehow I’ve got to get past their sentries. I did it once before, but with the state I’m in now I need to be more vigilant than ever. I can’t control the shaking of my limbs. Can’t even hold my katana still. This is going to be tough, but I’ve no choice if I want to see the sun rise tomorrow. Musashi stopped in his tracks. Though his usually acute senses were dulled somewhat, no poison could numb his instincts. Danger lay in the near vicinity to his left. The question was, did he have the strength to confront it, or should he take the risk of traversing the treacherous cliff on his right instead?",
+  "riddleIntro": "The unassuming wall that loomed before him seemed just another mountain face in a museum of rock, but Musashi knew its secrets. This wasn’t a wall, but an entrance. The cave into the school is here, I remember it! Only problem is, they change the unlock sequence to ensure only authorised members can enter. I just need to find the new way in.",
+  "ahRiddle": "Ah, a riddle.",
+  "notHere": "Hmm. Not here.",
+  "riddle": "I’m often seen but sometimes hidden, guarding spaces, unbidden. What am I?",
+  "openDoor": "The spoken password caused a rectangular section of the rock to recede into the wall, revealing a doorway into the Yoshiokah school. Musashi had reached his destination. Just one challenge remained.",
+  "finale": "Musashi strode the empty halls of the Yoshiokah school throwing caution to the wind. He was running out of time. I can feel my constitution draining by the minute. I’m… losing control… of my breathing….my limbs think twice before obeying… so… cold. I need to end this… fast! By the will of Shinigami, you should have been taken from this world hours ago. Is it a ghost I see before me? It will take a lot more than… a simple poison… to stop Miyamoto Musashi from achieving his goal. Not much more, it seems! You can’t even string a sentence together without needing to catch your breath! Musashi had had enough talking. This would only end one way. He had no second thoughts as he slid his katana from its sheath.",
+  "ending": "Musashi didn’t even take a moment to regard the corpse that lay at his feet, the life he’d just taken. He simply reached down, searched the body’s pockets and pulled out a glass vile. This is it. My hosts each had this interesting little drink with them the night we ate together. A small bottle with a cork in the shape of a sakura flower. ‘Helps with digestion,’ they said. They were right! The story of the samurai who battled with death herself and still managed to vanquish his enemies became legend. Generations of young swordsmen modelled their lives and aspirations after the example set by Miyamoto Musashi, the Toxic Ronin. ^^^^",
+  "forestObstacle": "Reaching the edge of the forest, the trees suddenly gave way to a thin stone pathway littered with stones from the mountain face on the left side of the alley. On the right was nothing but a drop into the unforgiving waves. The shivering samurai would need to fight the effects of the toxin and find his balance and control. After examining the wall of rock on his left, Musashi noticed something was wrong. I knew it couldn’t be as easy as it seemed. There are unnatural ridges in the rock wall. I suspect they’ve planted traps to push unwanted visitors into the ocean. I must think carefully before each step. Looks like I need to stay low for three steps, jump for the next, crouch again, then jump over the last one.",
+  "forestFight": "Musashi moved with nonchalance and confidence, but he took caution in every step. He knew his best approach was to act unaware. Give his opponent or opponents the feeling that they had the advantage. Poison or no, the samurai’s unwavering discipline and determination made him a danger in any fight. His enemies would find out the hard way that assuming victory against Miyamoto Musashi was a sure way to sink yourself into an early grave."
 };
 function GameLogic({
   postTextToConsole,
@@ -885,6 +943,9 @@ function GameLogic({
   let audioSpeed = useRef(1);
   let transcriptNameRef = useRef("");
   let audioFinished = useRef(false);
+  let opponent = useRef(0);
+  useRef(null);
+  const musicAudio = useRef(null);
   useEffect(() => {
     audioRef.current = document.createElement("audio");
     const handleAudioEnd = () => {
@@ -893,10 +954,26 @@ function GameLogic({
       audioFinished.current = true;
     };
     audioRef.current.addEventListener("ended", handleAudioEnd);
+    const handleMusicEnd = () => {
+      console.log("music ended");
+      if (musicAudio.current) {
+        musicAudio.current.play();
+      }
+    };
+    musicAudio.current = document.createElement("audio");
+    musicAudio.current.src = "src/Audio/Game Sounds/battle-music.mp3";
+    musicAudio.current.addEventListener("ended", handleMusicEnd);
     return () => {
       audioRef.current.removeEventListener("ended", handleAudioEnd);
+      musicAudio.current.removeEventListener("ended", handleMusicEnd);
     };
   }, []);
+  function playSoundEffect(url) {
+    const audio = new Audio(url);
+    audio.play().catch((err) => {
+      console.error("Error playing audio:", err);
+    });
+  }
   const audioStart = async () => {
     return new Promise((resolve) => {
       const onAudioEnd = () => {
@@ -944,52 +1021,145 @@ function GameLogic({
   };
   const isInitialRenderConsoleToGame = useRef(true);
   useEffect(() => {
-    if (isInitialRenderConsoleToGame.current) {
-      isInitialRenderConsoleToGame.current = false;
-      return;
-    }
-    switch (consoleToGameCommandRef.current) {
-      case "start game":
-        startGame();
-        break;
-      case "play":
-        audioPlay();
-        break;
-      case "pause":
-        audioPause();
-        break;
-      case "speed up":
-        audioSpeedUp();
-        break;
-      case "slow down":
-        audioSlowDown();
-        break;
-      case "rewind":
-        audioRewind(10);
-        break;
-      case "end game":
-        endGame();
-        break;
-      case "restart":
-        endGame(true);
-        break;
-      default:
-        switch (waitingForUserInput.current) {
-          case "Forest":
-            if (consoleToGameCommandRef.current === "left") {
-              forestLeft();
-            } else if (consoleToGameCommandRef.current === "right") {
-              forestRight();
-            } else {
-              postTextToConsole(`Please pick either "left" or "right"`);
+    cmdFunc();
+    async function cmdFunc() {
+      console.log(`commandRef thing ran with command ${consoleToGameCommandRef.current}`);
+      if (isInitialRenderConsoleToGame.current) {
+        isInitialRenderConsoleToGame.current = false;
+        return;
+      }
+      switch (consoleToGameCommandRef.current) {
+        case "start game":
+          tutorialQuestion();
+          break;
+        case "debug game":
+          debugGame();
+          break;
+        case "play":
+          audioPlay();
+          break;
+        case "pause":
+          audioPause();
+          break;
+        case "speed up":
+          audioSpeedUp();
+          break;
+        case "slow down":
+          audioSlowDown();
+          break;
+        case "rewind":
+          audioRewind(10);
+          break;
+        case "end game":
+          endGame();
+          break;
+        case "restart":
+          endGame(true);
+          break;
+        default:
+          if (consoleToGameCommandRef !== "") {
+            switch (waitingForUserInput.current) {
+              case "TutorialQuestion":
+                switch (consoleToGameCommandRef.current) {
+                  case "yes":
+                    tutorial();
+                    waitingForUserInput.current = "";
+                    break;
+                  case "no":
+                    startGame();
+                    waitingForUserInput.current = "";
+                    break;
+                  default:
+                    postTextToConsole(`Please say "yes" or "no"`, "");
+                    break;
+                }
+                break;
+              case "Forest":
+                if (consoleToGameCommandRef.current === "left") {
+                  forestLeft();
+                } else if (consoleToGameCommandRef.current === "right") {
+                  forestRight();
+                } else {
+                  postTextToConsole(`Please pick either "left" or "right"`, "");
+                }
+                waitingForUserInput.current = "";
+                break;
+              case "Combat":
+                switch (consoleToGameCommandRef.current) {
+                  case "slash":
+                  case "stab":
+                  case "parry slash":
+                  case "parry stab":
+                    combatMove(consoleToGameCommandRef.current);
+                    break;
+                  default:
+                    postTextToConsole("Not a valid move. Use help combat to learn more", "");
+                    break;
+                }
+                postTextToConsole("Pick your move!", "");
+                break;
+              case "riddleStart":
+                switch (consoleToGameCommandRef.current) {
+                  case "up":
+                  case "right":
+                  case "left":
+                    riddleSearchWrong();
+                    break;
+                  case "down":
+                    riddleFound();
+                    break;
+                  default:
+                    postTextToConsole("Not a place to search on the wall. Try again", "");
+                    await new Promise((resolve) => setTimeout(resolve, 4e3));
+                    playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3");
+                }
+                break;
+              case "Riddle":
+                switch (consoleToGameCommandRef.current) {
+                  case "door":
+                  case "a door":
+                    riddleDoorOpen();
+                    break;
+                  default:
+                    postTextToConsole("That is not the answer. Guess again", "");
+                    await new Promise((resolve) => setTimeout(resolve, 3e3));
+                    playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3");
+                }
+                break;
+              case "forestObstacle":
+                if (consoleToGameCommandRef.current === "hint") {
+                  forestRight();
+                } else if (consoleToGameCommandRef.current === forestObstacleOrder[forestObstacleProgress.current]) {
+                  postTextToConsole("Correct guess, move forward", "");
+                  forestObstacleProgress.current++;
+                  await new Promise((resolve) => setTimeout(resolve, 2e3));
+                  playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3");
+                  if (forestObstacleProgress.current === 6) {
+                    postTextToConsole("You made it past the traps!", "");
+                    riddleStart();
+                  }
+                } else if (consoleToGameCommandRef.current === "crouch" || consoleToGameCommandRef.current === "jump") {
+                  if (obstacleStamina.current !== 0) {
+                    obstacleStamina.current--;
+                    postTextToConsole(`The trap pushes Musashi but he manages to stabilize himself. He can only do this ${obstacleStamina.current} more times before he falls!`, "");
+                    await new Promise((resolve) => setTimeout(resolve, 8e3));
+                    playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3");
+                  } else {
+                    postTextToConsole("Musashi was knocked into the ocean! Game Over.", "");
+                    endGame(true);
+                  }
+                } else {
+                  postTextToConsole(`Not a valid option. Please say "jump" or "crouch"`, "");
+                  await new Promise((resolve) => setTimeout(resolve, 4e3));
+                  playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3");
+                }
+              default:
+                console.log("GameLogic:Not a command match");
             }
-            waitingForUserInput.current = "";
-            break;
-          default:
-            console.log("GameLogic:Not a command match");
-        }
+          }
+      }
+      consoleToGameCommandRef.current = "";
     }
-    consoleToGameCommandRef = "";
   }, [commandToGameTrigger]);
   let storyBlock;
   function checkStoryBlock() {
@@ -1003,23 +1173,49 @@ function GameLogic({
     audioPause();
     transcriptInterrupt.current = true;
     gameStarted.current = false;
+    forestObstacleProgress.current = 0;
+    obstacleStamina.current = 5;
     await new Promise((resolve) => setTimeout(resolve, 300));
     delayedPosition.current = 0;
     if (restart) {
       postTextToConsole("Starting game from the beginning.", "Console");
+      transcriptInterrupt.current = false;
       startGame();
     } else {
       postTextToConsole("Game session ended.", "Console");
     }
   }
-  let gameStarted = useRef(false);
-  let cancelGame;
-  async function startGame() {
+  async function tutorialQuestion() {
     if (gameStarted.current === true) {
       postTextToConsole("The game is already started", "Console");
       return;
     }
     gameStarted.current = true;
+    postTextToConsole("Would you like to go to the tutorial? Say yes or no", "");
+    await new Promise((resolve) => setTimeout(resolve, 7e3));
+    playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3");
+    waitingForUserInput.current = "TutorialQuestion";
+  }
+  async function tutorial() {
+    await new Promise(async (resolve, reject) => {
+      cancelGame = reject;
+      postTextToConsole("Welcome to the tutorial. Throughout this experience, you will be able to give voice inputs to decide your actions in the game. You will be prompted to give voice inputs by this sound effect.", "");
+      await new Promise((resolve2) => setTimeout(resolve2, 12e3));
+      playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3");
+      await new Promise((resolve2) => setTimeout(resolve2, 1e3));
+      postTextToConsole("This game has many different commands to control the experience. These include but are notlimited to. Rewind, speed up, slow down, pause and play. You can call these commandsat any time. If you wish to learn about any of these commandsplease say `help` for more information", "");
+      postTextToConsole("In this game you will fight many enemies in battle. These battles are turn based. In battle you have four moves, slash, stab, parry slash and parry stab. Slash is a standard attack that can be parried withparry slash, stab is a move that you charge up on your initial turn and can then either go throughwith it  on your next turn and do lots of damage to your opponent or you can switch to slash to trick your opponent. Be wary however as if your opponent predicts this and picks parry slash then you will then be stunned andmiss a turn. The same goes for if your opponent predicts you follow through and they pick parry stab. This makes stab a risky move but with high reward.", "");
+      postTextToConsole("If you want to hear that again mid game, say help combat to hear that again", "");
+      postTextToConsole("Would you like to hear the tutorial again? Say yes or no", "");
+      await new Promise((resolve2) => setTimeout(resolve2, 68e3));
+      playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3");
+      waitingForUserInput.current = "TutorialQuestion";
+      resolve();
+    });
+  }
+  let gameStarted = useRef(false);
+  let cancelGame;
+  async function startGame() {
     await new Promise(async (resolve, reject) => {
       cancelGame = reject;
       audioRef.current.src = "./src/Audio/Narration/Intro.mp3";
@@ -1037,14 +1233,321 @@ function GameLogic({
       waitingForUserInput.current = "Forest";
       await new Promise((resolve2) => setTimeout(resolve2, 300));
       postTextToConsole("Choose your path. Do you want to go left or right?", "");
+      await new Promise((resolve2) => setTimeout(resolve2, 4e3));
+      playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3");
+      resolve();
+    });
+  }
+  async function debugGame() {
+    await new Promise(async (resolve, reject) => {
+      cancelGame = reject;
+      postTextToConsole("debug game started", "");
+      startCombat();
+      resolve();
+    });
+  }
+  async function riddleStart() {
+    await new Promise(async (resolve, reject) => {
+      cancelGame = reject;
+      audioRef.current.src = "./src/Audio/Narration/riddleIntro.mp3";
+      transcriptOutput("riddleIntro");
+      audioStart();
+      await new Promise(async (resolve2) => {
+        storyBlock = resolve2;
+      });
+      postTextToConsole("Do you want to look left, right, up, or down?", "");
+      waitingForUserInput.current = "riddleStart";
+      await new Promise((resolve2) => setTimeout(resolve2, 4e3));
+      playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3");
+      resolve();
+    });
+  }
+  async function riddleSearchWrong() {
+    await new Promise(async (resolve, reject) => {
+      cancelGame = reject;
+      waitingForUserInput.current = "";
+      audioRef.current.src = "./src/Audio/Narration/notHere.mp3";
+      transcriptOutput("notHere");
+      audioStart();
+      await new Promise(async (resolve2) => {
+        storyBlock = resolve2;
+      });
+      playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3");
+      waitingForUserInput.current = "riddleStart";
+      resolve();
+    });
+  }
+  async function riddleFound() {
+    await new Promise(async (resolve, reject) => {
+      cancelGame = reject;
+      waitingForUserInput.current = "";
+      audioRef.current.src = "./src/Audio/Narration/ahRiddle.mp3";
+      transcriptOutput("ahRiddle");
+      audioStart();
+      await new Promise(async (resolve2) => {
+        storyBlock = resolve2;
+      });
+      audioRef.current.src = "./src/Audio/Narration/riddle.mp3";
+      transcriptOutput("riddle");
+      audioStart();
+      await new Promise(async (resolve2) => {
+        storyBlock = resolve2;
+      });
+      playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3");
+      waitingForUserInput.current = "Riddle";
+      resolve();
+    });
+  }
+  async function riddleDoorOpen() {
+    await new Promise(async (resolve, reject) => {
+      cancelGame = reject;
+      waitingForUserInput.current = "";
+      audioRef.current.src = "./src/Audio/Narration/openDoor.mp3";
+      transcriptOutput("openDoor");
+      audioStart();
+      await new Promise(async (resolve2) => {
+        storyBlock = resolve2;
+      });
+      finale();
+      resolve();
+    });
+  }
+  async function finale() {
+    await new Promise(async (resolve, reject) => {
+      cancelGame = reject;
+      audioRef.current.src = "./src/Audio/Narration/finale.mp3";
+      transcriptOutput("finale");
+      audioStart();
+      await new Promise(async (resolve2) => {
+        storyBlock = resolve2;
+      });
+      opponent.current = 2;
+      startCombat();
+      resolve();
+    });
+  }
+  async function ending() {
+    await new Promise(async (resolve, reject) => {
+      cancelGame = reject;
+      await new Promise((resolve2) => setTimeout(resolve2, 4e3));
+      audioRef.current.src = "./src/Audio/Narration/ending.mp3";
+      transcriptOutput("ending");
+      audioStart();
+      await new Promise(async (resolve2) => {
+        storyBlock = resolve2;
+      });
+      postTextToConsole("You just finished Toxic Rōnin", "");
+      endGame();
       resolve();
     });
   }
   async function forestLeft() {
     postTextToConsole("You picked 'left'", "");
+    await new Promise(async (resolve, reject) => {
+      cancelGame = reject;
+      audioRef.current.src = "./src/Audio/Narration/forestFight.mp3";
+      transcriptOutput("forestFight");
+      audioStart();
+      await new Promise(async (resolve2) => {
+        storyBlock = resolve2;
+      });
+      opponent.current = 1;
+      startCombat();
+      resolve();
+    });
   }
+  const forestObstacleOrder = ["crouch", "crouch", "crouch", "jump", "crouch", "jump"];
+  let forestObstacleProgress = useRef(0);
+  let obstacleStamina = useRef(5);
   async function forestRight() {
     postTextToConsole("You picked 'right'", "");
+    await new Promise(async (resolve, reject) => {
+      cancelGame = reject;
+      audioRef.current.src = "./src/Audio/Narration/forestObstacle.mp3";
+      transcriptOutput("forestObstacle");
+      audioStart();
+      await new Promise(async (resolve2) => {
+        storyBlock = resolve2;
+      });
+      waitingForUserInput.current = "forestObstacle";
+      postTextToConsole(`Say crouch, or jump in line with Musashis guess. Say "hint" in order to hear the dialogue again`, "");
+      await new Promise((resolve2) => setTimeout(resolve2, 7e3));
+      playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3");
+      resolve();
+    });
+  }
+  async function startCombat() {
+    await new Promise(async (resolve, reject) => {
+      cancelGame = reject;
+      musicAudio.current.play();
+      postTextToConsole("You have entered battle!", "");
+      postTextToConsole("Use the help combat command to learn about combat", "");
+      playerHealth.current = 100;
+      enemyHealth.current = 100;
+      firstTurn.current = true;
+      waitingForUserInput.current = "Combat";
+      postTextToConsole("Pick your first move!", "");
+      resolve();
+    });
+  }
+  let playerHealth = useRef(100);
+  let enemyHealth = useRef(100);
+  let stunned = useRef(0);
+  let playerChargingStab = useRef(false);
+  let enemyChargingStab = useRef(false);
+  const cTextPlayerParrySuccess = "You predicted the enemy and parried their attack!";
+  const cTextEnemyParrySuccess = "The enemy predicted you and parried your attack!";
+  const cTextPlayerStunned = "You are stunned for the next turn!";
+  const cTextEnemyStunned = "The enemy is stunned for the next turn!";
+  const cTextPlayerStabCharge = "You pull back your sword and strengthen your stance in preparation to stab your opponent next turn!";
+  const cTextEnemyStabCharge = "The enemy pulls his sword back and strengthens his stance in preparation to stab you next turn!";
+  let firstTurn = useRef(true);
+  async function combatMove(movePicked) {
+    const enemyMovePicked = enemyMoveAI();
+    if (stunned.current === 1) {
+      stunned.current = 0;
+    }
+    console.log(`enemy move picked ${enemyMovePicked}`);
+    if (movePicked === "slash" && enemyMovePicked === "parry slash") {
+      if (playerChargingStab.current) {
+        stunned.current = 1;
+        postTextToConsole(cTextEnemyParrySuccess, "");
+        postTextToConsole(cTextPlayerStunned, "");
+        postTextToConsole("You were stunned and so your move was skipped!", "");
+        combatMove("");
+        return;
+      } else {
+        postTextToConsole(cTextEnemyParrySuccess, "");
+        return;
+      }
+    } else if (movePicked === "stab" && enemyMovePicked === "parry stab" && playerChargingStab.current) {
+      stunned.current = 1;
+      playerChargingStab.current = false;
+      postTextToConsole(cTextEnemyParrySuccess, "");
+      postTextToConsole(cTextPlayerStunned, "");
+      postTextToConsole("You were stunned and so your move was skipped!", "");
+      combatMove("");
+      return;
+    }
+    if (movePicked === "parry slash" && enemyMovePicked === "slash") {
+      if (enemyChargingStab.current) {
+        stunned.current = 2;
+        postTextToConsole(cTextPlayerParrySuccess, "");
+        postTextToConsole(cTextEnemyStunned, "");
+        return;
+      } else {
+        postTextToConsole(cTextPlayerParrySuccess, "");
+        return;
+      }
+    } else if (movePicked === "parry stab" && enemyMovePicked === "stab" && enemyChargingStab.current === true) {
+      stunned.current = 2;
+      enemyChargingStab.current = false;
+      postTextToConsole(cTextPlayerParrySuccess, "");
+      postTextToConsole(cTextEnemyStunned, "");
+      return;
+    }
+    if (movePicked !== "stab") {
+      playerChargingStab.current = false;
+    }
+    if (enemyMovePicked !== "stab") {
+      enemyChargingStab.current = false;
+    }
+    let damage = 0;
+    if (movePicked === "slash") {
+      damage = 30;
+      playerChargingStab.current = false;
+      playSoundEffect("src/Audio/Game Sounds/sword-clash.mp3");
+    } else if (movePicked === "stab" && playerChargingStab.current === true) {
+      damage = 70;
+      playerChargingStab.current = false;
+    } else if (movePicked === "stab") {
+      postTextToConsole(cTextPlayerStabCharge, "");
+      playerChargingStab.current = true;
+    }
+    let damageMessage = ` and did ${damage} damage`;
+    if (!playerChargingStab.current && movePicked !== "") {
+      postTextToConsole(`You picked ${movePicked}${damageMessage}!`, "");
+    }
+    enemyHealth.current -= damage;
+    if (enemyHealth.current <= 0) {
+      waitingForUserInput.current = "";
+      postTextToConsole("You killed your foe and won the fight!", "");
+      if (opponent.current === 1) {
+        riddleStart();
+      } else if (opponent.current === 2) {
+        ending();
+      }
+      musicAudio.current.currentTime = 0;
+      musicAudio.current.pause();
+      playSoundEffect("src/Audio/Game Sounds/male-death-sound.mp3");
+      return;
+    }
+    damage = 0;
+    if (enemyMovePicked === "slash") {
+      damage = 30;
+      enemyChargingStab.current = false;
+    } else if (enemyMovePicked === "stab" && enemyChargingStab.current === true) {
+      damage = 70;
+      enemyChargingStab.current = false;
+    } else if (enemyMovePicked === "stab") {
+      postTextToConsole(cTextEnemyStabCharge, "");
+      enemyChargingStab.current = true;
+    }
+    damageMessage = ` and did ${damage} damage`;
+    if (!enemyChargingStab.current && stunned.current !== 2) {
+      postTextToConsole(`The enemy picked ${enemyMovePicked}${damageMessage}!`, "");
+    }
+    playerHealth.current -= damage;
+    if (playerHealth.current <= 0) {
+      playSoundEffect("src/Audio/Game Sounds/male-death-sound.mp3");
+      postTextToConsole("You have been killed and lost the fight. Game over.", "");
+      waitingForUserInput.current = "";
+      await new Promise((resolve) => setTimeout(resolve, 15e3));
+      endGame(true);
+      musicAudio.current.currentTime = 0;
+      musicAudio.current.pause();
+      return;
+    }
+    if (stunned.current === 2) {
+      postTextToConsole("The enemy was stunned and so their move was skipped!", "");
+      stunned.current = 0;
+    }
+    postTextToConsole(`You have ${playerHealth.current} health remaining and the enemy has ${enemyHealth.current} remaining!`, "");
+  }
+  function enemyMoveAI() {
+    if (firstTurn.current) {
+      firstTurn.current = false;
+      console.log("ENEMY AI : first turn");
+      return randomMove(1, 3);
+    }
+    if (stunned.current === 2) {
+      console.log("ENEMY AI : enemy stunned");
+      return "";
+    } else if (playerChargingStab.current) {
+      console.log("ENEMY AI : player charging stab");
+      return randomMove(3, 4);
+    } else if (enemyChargingStab.current) {
+      console.log("ENEMY AI : enemy charging stab");
+      return randomMove(1, 2);
+    } else if (stunned.current === 1) {
+      console.log("ENEMY AI : player stunned");
+      return "slash";
+    }
+    console.log("ENEMY AI : no match. Random move");
+    return randomMove(1, 4);
+    function randomMove(min, max) {
+      const enemyMoveNum = Math.floor(Math.random() * (max - min + 1)) + min;
+      switch (enemyMoveNum) {
+        case 1:
+          return "slash";
+        case 2:
+          return "stab";
+        case 3:
+          return "parry slash";
+        case 4:
+          return "parry stab";
+      }
+    }
   }
   async function transcriptOutput(transcriptName) {
     if (isTranscriptRunning.current) {
@@ -1079,7 +1582,7 @@ function GameLogic({
         transcriptRef.current.innerHTML = delayedTranscript;
       } else {
         transcriptRef.current.innerHTML = "";
-        postTextToConsole(delayedTranscript, "");
+        postTextToConsole(delayedTranscript, "", true);
         delayedPosition.current = i;
         if (transcriptRewindSeconds.current !== 0) {
           let timeAddition = 0;
@@ -1105,9 +1608,10 @@ function GameLogic({
     }
     if (transcriptInterrupt.current === false) {
       transcriptRef.current.innerHTML = "";
-      postTextToConsole(delayedTranscript, "");
+      postTextToConsole(delayedTranscript, "", true);
       delayedPosition.current = 0;
       isTranscriptRunning.current = false;
+      await new Promise((resolve) => setTimeout(resolve, 1e3));
       checkStoryBlock();
     } else {
       transcriptInterrupt.current = false;
@@ -1125,9 +1629,9 @@ function Play() {
   const transcriptRef = useRef();
   const [commandToGameTrigger, setCommandToGameTrigger] = useState(true);
   const consoleToGameCommandRef = useRef("");
-  function postGameLogicToConsole(message, speaker) {
+  function postGameLogicToConsole(message, speaker, isTranscript) {
     if (consoleRef.current) {
-      consoleRef.current.callPostToConsole(message, speaker);
+      consoleRef.current.callPostToConsole(message, speaker, isTranscript);
     }
   }
   return /* @__PURE__ */ jsxs(Fragment, { children: [
@@ -1158,46 +1662,183 @@ function Play() {
   ] });
 }
 function UserStats() {
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch("/site/stats", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json"
+          }
+        });
+        if (!response.ok) {
+          throw new Error("Failed to fetch stats.");
+        }
+        const data = await response.json();
+        setStats(data);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+  if (loading) {
+    return /* @__PURE__ */ jsx("p", { children: "Loading stats..." });
+  }
+  if (error) {
+    return /* @__PURE__ */ jsxs("p", { children: [
+      "Error loading stats: ",
+      error
+    ] });
+  }
   return /* @__PURE__ */ jsxs(Fragment, { children: [
     /* @__PURE__ */ jsx(Banner, {}),
     /* @__PURE__ */ jsx("h1", { style: { textAlign: "center" }, children: "User Stats" }),
     /* @__PURE__ */ jsx("hr", {}),
     /* @__PURE__ */ jsx("br", {}),
+    /* @__PURE__ */ jsx("div", { className: "statsContainer", children: /* @__PURE__ */ jsxs("div", { className: "timePlayed", children: [
+      /* @__PURE__ */ jsx("h2", { className: "text-uppercase", children: "Seconds Played" }),
+      /* @__PURE__ */ jsx("h4", { children: stats.stats.totalTimePlayed })
+    ] }) }),
     /* @__PURE__ */ jsxs("div", { className: "statsContainer", children: [
-      /* @__PURE__ */ jsxs("div", { className: "statSection1", children: [
+      /* @__PURE__ */ jsxs("div", { className: "statSection", children: [
         /* @__PURE__ */ jsx("h2", { className: "text-uppercase", children: "Number of Players" }),
-        /* @__PURE__ */ jsx("h4", { children: "1" })
+        /* @__PURE__ */ jsx("h4", { children: stats.totalUsers })
       ] }),
-      /* @__PURE__ */ jsxs("div", { className: "statSection1", children: [
+      /* @__PURE__ */ jsxs("div", { className: "statSection", children: [
         /* @__PURE__ */ jsx("h2", { className: "text-uppercase", children: "Most Active Player" }),
-        /* @__PURE__ */ jsx("h4", { children: "Smelvin Potter | 00:00:00" })
+        /* @__PURE__ */ jsxs("h4", { className: "text-uppercase", children: [
+          stats.mostPlayed.name,
+          " | ",
+          stats.mostPlayed.timePlayed
+        ] })
       ] })
     ] }),
     /* @__PURE__ */ jsxs("div", { className: "statsContainer", children: [
-      /* @__PURE__ */ jsxs("div", { className: "statSection1", children: [
-        /* @__PURE__ */ jsx("h2", { className: "text-uppercase", children: "Time Played" }),
-        /* @__PURE__ */ jsx("h4", { children: "00:00:00" })
+      /* @__PURE__ */ jsxs("div", { className: "statSection", children: [
+        /* @__PURE__ */ jsx("h2", { className: "text-uppercase", children: "Total Game Completions" }),
+        /* @__PURE__ */ jsx("h4", { children: stats.stats.totalGameCompletions })
       ] }),
-      /* @__PURE__ */ jsxs("div", { className: "statSection1", children: [
+      /* @__PURE__ */ jsxs("div", { className: "statSection", children: [
+        /* @__PURE__ */ jsx("h2", { className: "text-uppercase", children: "Total Deaths" }),
+        /* @__PURE__ */ jsx("h4", { children: stats.stats.totalNumberOfDeaths })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "statsContainer", children: [
+      /* @__PURE__ */ jsxs("div", { className: "statSection", children: [
+        /* @__PURE__ */ jsxs("h2", { className: "text-uppercase", children: [
+          "Riddle Guesses: ",
+          stats.stats.totalRiddleGuesses
+        ] }),
+        /* @__PURE__ */ jsxs("h2", { className: "text-success", children: [
+          "Correct: ",
+          stats.stats.totalRiddleGuessesCorrect
+        ] }),
+        /* @__PURE__ */ jsxs("h2", { className: "text-danger", children: [
+          "Incorrect: ",
+          stats.stats.totalRiddleGuessesIncorrect
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "statSection", children: [
+        /* @__PURE__ */ jsxs("h2", { className: "text-uppercase", children: [
+          "Forest Path Choices: ",
+          stats.stats.totalPathChoices
+        ] }),
+        /* @__PURE__ */ jsxs("h2", { children: [
+          "Chose to Fight: ",
+          stats.stats.totalPathChoicesLeft
+        ] }),
+        /* @__PURE__ */ jsxs("h2", { children: [
+          "Chose to Traverse: ",
+          stats.stats.totalPathChoicesRight
+        ] })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "statsContainer", children: [
+      /* @__PURE__ */ jsxs("div", { className: "statSection", children: [
         /* @__PURE__ */ jsx("h2", { className: "text-uppercase", children: "Audio Files Played" }),
-        /* @__PURE__ */ jsx("h4", { children: "0" })
+        /* @__PURE__ */ jsx("h4", { children: stats.stats.totalAudioPlayed })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "statSection", children: [
+        /* @__PURE__ */ jsx("h2", { className: "text-uppercase", children: "Commands Used" }),
+        /* @__PURE__ */ jsx("h4", { children: stats.stats.totalCommandsUsed })
       ] })
     ] }),
     /* @__PURE__ */ jsxs("div", { className: "statsContainer", children: [
-      /* @__PURE__ */ jsxs("div", { className: "statSection2", children: [
+      /* @__PURE__ */ jsxs("div", { className: "statSection", children: [
         /* @__PURE__ */ jsx("h2", { className: "text-uppercase", children: "Audio File Play Count" }),
-        /* @__PURE__ */ jsx("h4", { children: "hit: 0" }),
-        /* @__PURE__ */ jsx("h4", { children: "miss: 0" }),
-        /* @__PURE__ */ jsx("h4", { children: "damaged: 0" }),
-        /* @__PURE__ */ jsx("h4", { children: "stamina: 0" })
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "hit: ",
+          stats.stats.totalHit
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "miss: ",
+          stats.stats.totalMiss
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "damaged: ",
+          stats.stats.totalDamaged
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "stamina: ",
+          stats.stats.totalStamina
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "eating: ",
+          stats.stats.totalEating
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "death: ",
+          stats.stats.totalDeath
+        ] })
       ] }),
-      /* @__PURE__ */ jsxs("div", { className: "statSection2", children: [
+      /* @__PURE__ */ jsxs("div", { className: "statSection", children: [
         /* @__PURE__ */ jsx("h2", { className: "text-uppercase", children: "Command Usage" }),
-        /* @__PURE__ */ jsx("h4", { children: "Repeat: 0" }),
-        /* @__PURE__ */ jsx("h4", { children: "End Game: 0" }),
-        /* @__PURE__ */ jsx("h4", { children: "Go Faster: 0" }),
-        /* @__PURE__ */ jsx("h4", { children: "Go Slower: 0" }),
-        /* @__PURE__ */ jsx("h4", { children: "Restart: 0" })
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "Start Game: ",
+          stats.stats.totalStartGame
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "Repeat: ",
+          stats.stats.totalRepeat
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "Pause: ",
+          stats.stats.totalPause
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "End Game: ",
+          stats.stats.totalEndGame
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "Speed Up: ",
+          stats.stats.totalSpeedUp
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "Slow Down: ",
+          stats.stats.totalSlowDown
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "Restart: ",
+          stats.stats.totalRestart
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "Clear: ",
+          stats.stats.totalClear
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "Rewind: ",
+          stats.stats.totalRewind
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "Help: ",
+          stats.stats.totalHelp
+        ] })
       ] })
     ] }),
     /* @__PURE__ */ jsx("div", { className: "statsContainer", children: /* @__PURE__ */ jsxs("div", { className: "statSectionHeatmap", children: [
@@ -1212,36 +1853,169 @@ function UserStats() {
   ] });
 }
 function MyStats() {
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch("/user/stats", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json"
+          }
+        });
+        if (!response.ok) {
+          throw new Error("Failed to fetch stats.");
+        }
+        const data = await response.json();
+        setStats(data.stats);
+        setLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+  if (loading) {
+    return /* @__PURE__ */ jsx("p", { children: "Loading stats..." });
+  }
+  if (error) {
+    return /* @__PURE__ */ jsxs("p", { children: [
+      "Error loading stats: ",
+      error
+    ] });
+  }
   return /* @__PURE__ */ jsxs(Fragment, { children: [
     /* @__PURE__ */ jsx(Banner, {}),
     /* @__PURE__ */ jsx("h1", { style: { textAlign: "center" }, children: "My Stats" }),
     /* @__PURE__ */ jsx("hr", {}),
     /* @__PURE__ */ jsx("br", {}),
+    /* @__PURE__ */ jsx("div", { className: "statsContainer", children: /* @__PURE__ */ jsxs("div", { className: "timePlayed", children: [
+      /* @__PURE__ */ jsx("h2", { className: "text-uppercase", children: "Seconds Played" }),
+      /* @__PURE__ */ jsx("h4", { children: stats.timePlayed })
+    ] }) }),
     /* @__PURE__ */ jsxs("div", { className: "statsContainer", children: [
-      /* @__PURE__ */ jsxs("div", { className: "statSection1", children: [
-        /* @__PURE__ */ jsx("h2", { className: "text-uppercase", children: "Time Played" }),
-        /* @__PURE__ */ jsx("h4", { children: "00:00:00" })
+      /* @__PURE__ */ jsxs("div", { className: "statSection", children: [
+        /* @__PURE__ */ jsx("h2", { className: "text-uppercase", children: "Total Game Completions" }),
+        /* @__PURE__ */ jsx("h4", { children: stats.gameCompletions })
       ] }),
-      /* @__PURE__ */ jsxs("div", { className: "statSection1", children: [
-        /* @__PURE__ */ jsx("h2", { className: "text-uppercase", children: "Audio Files Played" }),
-        /* @__PURE__ */ jsx("h4", { children: "0" })
+      /* @__PURE__ */ jsxs("div", { className: "statSection", children: [
+        /* @__PURE__ */ jsx("h2", { className: "text-uppercase", children: "Total Deaths" }),
+        /* @__PURE__ */ jsx("h4", { children: stats.numberOfDeaths })
       ] })
     ] }),
     /* @__PURE__ */ jsxs("div", { className: "statsContainer", children: [
-      /* @__PURE__ */ jsxs("div", { className: "statSection2", children: [
-        /* @__PURE__ */ jsx("h2", { className: "text-uppercase", children: "Audio File Play Count" }),
-        /* @__PURE__ */ jsx("h4", { children: "hit: 0" }),
-        /* @__PURE__ */ jsx("h4", { children: "miss: 0" }),
-        /* @__PURE__ */ jsx("h4", { children: "damaged: 0" }),
-        /* @__PURE__ */ jsx("h4", { children: "stamina: 0" })
+      /* @__PURE__ */ jsxs("div", { className: "statSection", children: [
+        /* @__PURE__ */ jsxs("h2", { className: "text-uppercase", children: [
+          "Riddle Guesses: ",
+          stats.totalRiddleGuesses
+        ] }),
+        /* @__PURE__ */ jsxs("h2", { className: "text-success", children: [
+          "Correct: ",
+          stats.riddleGuesses.correct
+        ] }),
+        /* @__PURE__ */ jsxs("h2", { className: "text-danger", children: [
+          "Incorrect: ",
+          stats.riddleGuesses.incorrect
+        ] })
       ] }),
-      /* @__PURE__ */ jsxs("div", { className: "statSection2", children: [
+      /* @__PURE__ */ jsxs("div", { className: "statSection", children: [
+        /* @__PURE__ */ jsxs("h2", { className: "text-uppercase", children: [
+          "Forest Path Choices: ",
+          stats.totalPathChoices
+        ] }),
+        /* @__PURE__ */ jsxs("h2", { children: [
+          "Chose to Fight: ",
+          stats.pathChoices.left
+        ] }),
+        /* @__PURE__ */ jsxs("h2", { children: [
+          "Chose to Traverse: ",
+          stats.pathChoices.right
+        ] })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "statsContainer", children: [
+      /* @__PURE__ */ jsxs("div", { className: "statSection", children: [
+        /* @__PURE__ */ jsx("h2", { className: "text-uppercase", children: "Audio Files Played" }),
+        /* @__PURE__ */ jsx("h4", { children: stats.totalAudioPlayed })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "statSection", children: [
+        /* @__PURE__ */ jsx("h2", { className: "text-uppercase", children: "Commands Used" }),
+        /* @__PURE__ */ jsx("h4", { children: stats.totalCommandsUsed })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "statsContainer", children: [
+      /* @__PURE__ */ jsxs("div", { className: "statSection", children: [
+        /* @__PURE__ */ jsx("h2", { className: "text-uppercase", children: "Audio File Play Count" }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "hit: ",
+          stats.audioFiles.hit
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "miss: ",
+          stats.audioFiles.miss
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "damaged: ",
+          stats.audioFiles.damaged
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "stamina: ",
+          stats.audioFiles.stamina
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "eating: ",
+          stats.audioFiles.eating
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "death: ",
+          stats.audioFiles.death
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs("div", { className: "statSection", children: [
         /* @__PURE__ */ jsx("h2", { className: "text-uppercase", children: "Command Usage" }),
-        /* @__PURE__ */ jsx("h4", { children: "Repeat: 0" }),
-        /* @__PURE__ */ jsx("h4", { children: "End Game: 0" }),
-        /* @__PURE__ */ jsx("h4", { children: "Go Faster: 0" }),
-        /* @__PURE__ */ jsx("h4", { children: "Go Slower: 0" }),
-        /* @__PURE__ */ jsx("h4", { children: "Restart: 0" })
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "Start Game: ",
+          stats.commands.startGame
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "Repeat: ",
+          stats.commands.repeat
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "Pause: ",
+          stats.commands.pause
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "End Game: ",
+          stats.commands.endGame
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "Speed Up: ",
+          stats.commands.speedUp
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "Slow Down: ",
+          stats.commands.slowDown
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "Restart: ",
+          stats.commands.restart
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "Clear: ",
+          stats.commands.clear
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "Rewind: ",
+          stats.commands.rewind
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "Help: ",
+          stats.commands.help
+        ] })
       ] })
     ] }),
     /* @__PURE__ */ jsx("div", { className: "statsContainer", children: /* @__PURE__ */ jsxs("div", { className: "statSectionHeatmap", children: [
@@ -1432,29 +2206,6 @@ const SignUp = () => {
     ] })
   ] }) }) }) }) });
 };
-function setUserTTSPreferences({ voiceName, pitch, rate, volume, enabled }) {
-  if (typeof voiceName === "string") {
-    localStorage.setItem("ttsVoice", voiceName);
-  }
-  if (typeof pitch === "number") {
-    localStorage.setItem("ttsPitch", pitch.toString());
-  }
-  if (typeof rate === "number") {
-    localStorage.setItem("ttsRate", rate.toString());
-  }
-  if (typeof volume === "number") {
-    localStorage.setItem("ttsVolume", volume.toString());
-  }
-  if (typeof enabled === "boolean") {
-    localStorage.setItem("ttsEnabled", enabled.toString());
-  }
-}
-function getAvailableVoices() {
-  if (!window.speechSynthesis) {
-    return [];
-  }
-  return window.speechSynthesis.getVoices();
-}
 function TTSSettings() {
   const [voices, setVoices] = useState([]);
   const [selectedVoice, setSelectedVoice] = useState(
