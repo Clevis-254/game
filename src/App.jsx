@@ -1,6 +1,5 @@
-import React from "react"
 import { Play } from "./Pages/Play/Play.jsx";
-import {Routes, Route, Navigate} from "react-router-dom"
+import {Routes, Route } from "react-router-dom"
 import UserStats from "./Pages/UserStats/UserStats.jsx";
 import MyStats from "./Pages/MyStats/MyStats.jsx";
 import Login from "@/Pages/Login/login.jsx";
@@ -8,8 +7,7 @@ import SignUp from "@/SignUp/SignUp.jsx";
 import SettingsPage from "./Pages/Settings/SettingsPage.jsx";
 import ForgotPassword from './Pages/ForgotPassword';
 import ResetPassword from './Pages/ResetPassword';
-
-
+import { Error404 } from "./Errors/Error404.jsx";
 const App = () => {
     return (
         <Routes>
@@ -21,6 +19,7 @@ const App = () => {
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/404" element={<Error404 />} />
         </Routes>
     )
 }

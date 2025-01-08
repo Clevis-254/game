@@ -5,6 +5,8 @@ import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Toolti
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
+import "./statsPage.css"
+
 export function UserStats() {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
