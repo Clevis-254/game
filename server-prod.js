@@ -13,6 +13,7 @@ const app = express();
 
 app.use(express.static(path.resolve(path.dirname(fileURLToPath(import.meta.url)), 'dist/client'), { index: false }));
 
+const dbURI = "mongodb+srv://Admin_1:lLrnAwIbvkI7Hgj9@clustergroup8.o6myn.mongodb.net/Prod"; // production database 
 app.use('*', async (_, res) => {
     try {
         const template = fs.readFileSync('./dist/client/index.html', 'utf-8');
