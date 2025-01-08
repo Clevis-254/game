@@ -1,0 +1,11 @@
+{
+  "src/entry-server.jsx": {
+    "file": "entry-server.js",
+    "name": "entry-server",
+    "src": "src/entry-server.jsx",
+    "isEntry": true,
+    "css": [
+      "assets/entry-server-Bbq5LLpn.css"
+    ]
+  }
+}
