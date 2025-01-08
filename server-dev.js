@@ -208,10 +208,10 @@ async function save() {
                 help: 3,
             },
             heatmap: {
-                forestObstacle: 0,
-                forestFight: 0,
-                riddle: 0,
-                boss: 0,
+                forestObstacle: 100,
+                forestFight: 50,
+                riddle: 200,
+                boss: 150,
             },
         });
 
@@ -251,10 +251,10 @@ async function save() {
                 help: 0,
             },
             heatmap: {
-                forestObstacle: 0,
-                forestFight: 0,
-                riddle: 0,
-                boss: 0,
+                forestObstacle: 2984,
+                forestFight: 2529,
+                riddle: 3007,
+                boss: 3245,
             },
         });
     } catch (error) {
