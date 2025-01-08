@@ -1,17 +1,11 @@
 import {useState, useRef, useEffect, forwardRef, useImperativeHandle} from 'react'
 import './ConsoleStyling.css';
-// NOTE : No game logic should be in this module.
-// Accessibility logic is fine (e.g rewind to last dialogue)
-// DESIGN NOTE : We fetch the entire console history every time we reload because this is a small game with few
-// users. If we were to scale up then it would be worth doing only what is needed.
+import SpeechToText from "../../../../utility/SpeechToText.jsx";
 
-// TODO : Explore not using forwardRefs as they will be depreciated in future versions and perhaps using
-//  useEffect to push custom requests similar to how you push commands from console>game
 export const Console =
     forwardRef(function Console({transcriptRef, commandToGameTrigger,
-                                    setCommandToGameTrigger, consoleToGameCommandRef}, ref) {
+                                    setCommandToGameTrigger, consoleToGameCommandRef, gameAudioRef, ttsAudioRef}, ref) {
 
-        // This allows us to add messages to the console from external components
         useImperativeHandle(ref,() => {
             return {
                 callPostToConsole: (message, speaker) => {
@@ -19,13 +13,9 @@ export const Console =
                 }
             }
         })
-        // TODO : If we are expected to actually deploy this then pull this from a file /
-        //  dynamically find the base url
-        // This base url for some reason is needed sometimes under contexts that
-        // make no sense and probably will be needed in full deployment
+
         const BASEURL = "http://localhost:4173"
         const inputRef = useRef(null);
-
         const transcriptContainerRef = useRef(null)
 
         const handleEnterKeyDown = (event) => {
@@ -34,12 +24,14 @@ export const Console =
             }
         };
 
-        // Upon first page load, scroll the console to the bottom
+        const handleSpeechToText = (speechText) => {
+            new_console_input(speechText);
+        };
+
         useEffect(() => {
             scrollConsoleToBottom()
         },[])
 
-        // Used to make the transcript element re-appear when text is added
         useEffect(() => {
             if (transcriptRef.current) {
                 const observer = new MutationObserver((mutations) => {
@@ -68,16 +60,12 @@ export const Console =
             }
         },[transcriptRef])
 
-        // State Var holding all client side console text
         const [consoleText, setConsoleText] = useState([])
 
-        // If console text is changed, scroll to the bottom
         useEffect(() => {
             scrollConsoleToBottom()
         }, [consoleText])
 
-        // TODO : Potentially replace with useEffect or a ref (might not matter since its only changed once)
-        // Used to check if the history has been loaded yet upon first visit
         const [historyLoaded, setHistoryLoaded] = useState(false)
 
         function commandToGame(command){
@@ -89,23 +77,15 @@ export const Console =
             }
         }
 
-
-        // TODO STAT TRACK : Number of commands sent in by user, however note when implementing we dont want
-        //  to track when the user doesn't input anything which is handled at the very bottom in the default case.
-        // Function to add a user console input client side
-        function new_console_input() {
-
-            // (Re)focus the input box
+        function new_console_input(inputText) {
             if (inputRef.current) {
                 inputRef.current.focus();
             }
 
             const console_input_box = document.getElementById("console_input_box")
-            const console_input_text = console_input_box.value
+            const console_input_text = inputText || console_input_box.value
             console_input_box.value = ""
 
-            // TODO STAT TRACK : Number of times a command is called can be done here. For the case stack at the bottom
-            //  just add the line(s) to track below but dont add a break so it still falls through.
             switch (console_input_text) {
                 case "clear":
                     setConsoleText([...consoleText, ("Console : Clearing Console now...")])
@@ -116,7 +96,8 @@ export const Console =
                     const consoleResponse = "Starting game now..."
                     setConsoleText([...consoleText, `Console : ${consoleResponse}`])
                     commandToGame(console_input_text)
-                    post_new_input(consoleResponse, "Console")
+                    post_new_input(consoleResponse, "Console");
+                    playTTS(consoleResponse);
                     break
                 case "help":
                     printUserInput()
@@ -140,9 +121,6 @@ export const Console =
                 case "pause":
                 case "speed up":
                 case "slow down":
-                // TODO STAT TRACK : If I implement rewinding for custom seconds (unlikely) then potentially add the total
-                //  seconds rewound as a stat.
-                // TODO : make it so rewind can be "rewind x" for x seconds. Might need to pre-process or use an IF for this.
                 case "rewind":
                 case "end game":
                 case "restart":
@@ -150,26 +128,20 @@ export const Console =
                     commandToGame(console_input_text)
                     break
                 default:
-                    // In case it is a direction from the game eg "left" or "right". Pass it on
                     if (console_input_text !== "") {
                         printUserInput()
                         commandToGame(console_input_text)
                     }
             }
 
-            // TODO : Probably could remove this and just replace it with the new post_new_input method
-            // Print the user input to console
             function printUserInput() {
                 setConsoleText([...consoleText, ("User : " + console_input_text)])
                 post_new_input(console_input_text, "User")
             }
 
-            // TODO : Check if this is needed since we now do a useEffect for consoleText changes
             scrollConsoleToBottom()
         }
 
-        // TODO STAT TRACK : Total messages sent to the console per user and overall
-        // POST to db the new message
         function post_new_input(message, speaker) {
             fetch('/post_console_history', {
                 method: "POST",
@@ -185,7 +157,6 @@ export const Console =
             fetchConsoleHistory()
         }
 
-        // POST to clear console history in the db
         function clear_console_history() {
             fetch("/post_clear_console", {
                 method : "POST"
@@ -193,7 +164,6 @@ export const Console =
             setConsoleText([])
         }
 
-        // Get the console history from the db
         const fetchConsoleHistory = async () => {
             try {
                 const response = await fetch(BASEURL + '/get_console_history');
@@ -214,24 +184,28 @@ export const Console =
             }
         }
 
-        // TODO STAT TRACK: fetchStatTracking?
-
-        // TODO : Check if this is even needed anymore.
         if(historyLoaded === false){
             fetchConsoleHistory()
             setHistoryLoaded(true)
         }
 
-        // TODO : Make it so if the user tries scrolling up then it wont force you to the bottom. Aka if
-        //  we are at the bottom then a new input is done only then it will lock you to the bottom
-        // Scroll to the bottom with the new input
         async function scrollConsoleToBottom(){
             if (transcriptContainerRef.current) {
-                // TODO : When making the console cloud-db compatible, refine this.
                 await new Promise(resolve => setTimeout(resolve, 30))
                 transcriptContainerRef.current.scrollTop = transcriptContainerRef.current.scrollHeight;
             }
         }
+        function playTTS(text) {
+            if (ttsAudioRef.current) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.onend = () => {
+                    ttsAudioRef.current.src = '';
+                };
+                ttsAudioRef.current.src = URL.createObjectURL(new Blob([utterance]));
+                ttsAudioRef.current.play();
+            }
+        }
+
 
         return (
             <>
@@ -250,9 +224,10 @@ export const Console =
                         </div>
 
                         <div className="terminal-input-line">
-                            {/*TODO : make it so the suggestions dont appear on browsers based on previous input because its ugly.*/}
                             <input type="text" id="console_input_box" className="terminal-input-field" ref={inputRef} onKeyDown={handleEnterKeyDown}/>
                             <button onClick={new_console_input} type="button" id="enter_button">Enter</button>
+
+                            <SpeechToText onTextReady={handleSpeechToText} gameAudioRef={gameAudioRef} ttsAudioRef={ttsAudioRef} />
                         </div>
                     </div>
                 </div>
