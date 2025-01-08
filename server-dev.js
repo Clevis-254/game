@@ -9,13 +9,11 @@ import session from 'express-session';
 import bcrypt, { compare } from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import nodemailer from 'nodemailer';
-//importing the user schema 
 import User from './models/UserSchema.js';
 import error from "express/lib/view.js";
 import path from "path";
+import {redirect} from "react-router-dom";
 
-
-//importing express into the server
 const app = express();
 
 //  middleware configurations
@@ -27,30 +25,78 @@ const vite = await createServer({
     },
     appType: 'custom',
 });
-// creating authentication session
-// Update your session configuration
+
 app.use(session({
     secret: 'c5afbf2a6d07b53a8ac4f3ac154d2138bf4a89a39037d8caf47db0ed6d8469e08b94644a1c9d47852fe7ac9939bbaec7c8c7a23113c8a824cd27b6e0912b7804',
     resave: false,
     saveUninitialized: false,
     cookie: {
-        maxAge: 1000 * 60 * 60 * 24,  // 1 day
-        secure: false,  // Changed to false for development
+        maxAge: 1000 * 60 * 60 * 24,
+        secure: false,
         httpOnly: true
     }
 }));
-// MongoDB Linking Test Code
-const dbURI = "mongodb+srv://demo_user:321@cluster0.dayzc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-// const dbURI = "mongodb://localhost:27017/projectDatabase"
 
-// Updated MongoDB connection using async/await
-try {
-    await mongoose.connect(dbURI);
-    mongoose.set("debug", true)
-    console.log("Connected to MongoDB");
-} catch (error) {
-    console.error("Error connecting to MongoDB:", error);
+const dbURI = "mongodb+srv://Admin_1:lLrnAwIbvkI7Hgj9@clustergroup8.o6myn.mongodb.net/dev";  // Added /dev to create dev database
+
+// Database initialization function
+async function initializeDatabase() {
+    try {
+        // Connect to MongoDB with dev database
+        await mongoose.connect(dbURI, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
+        mongoose.set("debug", true);
+        console.log("Connected to MongoDB - Dev Database");
+
+        // Get reference to the database
+        const db = mongoose.connection.db;
+        
+        // List existing collections
+        const collections = await db.listCollections().toArray();
+        console.log("Existing collections:", collections.map(c => c.name));
+
+        // Clear all existing data
+        console.log("Clearing existing database collections...");
+        await Promise.all([
+            User.deleteMany({}),
+            consoleLogHistorySchema.deleteMany({})
+        ]);
+        console.log("Database collections cleared successfully");
+
+        // Create initial users
+        const user = await User.create({
+            Name: "Gikenyi",
+            email: "s@email.com",
+            Password: "1234"
+        });
+
+        const admin = await User.create({
+            Name: "User",
+            email: "admin@email.com",
+            Password: "admin1234",
+            UserType: "admin"
+        });
+
+        console.log("Initial users created successfully");
+        
+        // Log the current state of the database
+        const userCount = await User.countDocuments();
+        const consoleCount = await consoleLogHistorySchema.countDocuments();
+        console.log(`Database status:
+        - Database name: ${db.databaseName}
+        - Users created: ${userCount}
+        - Console records: ${consoleCount}`);
+
+    } catch (error) {
+        console.error("Database initialization error:", error);
+        console.error("Error details:", error.message);
+        process.exit(1); // Exit if database initialization fails
+    }
 }
+// Initialize database before starting the server
+await initializeDatabase();
 // making console so that it can use live data instead
 // Get or create user console if it doesn't exist
 // getUserConsole function
@@ -59,7 +105,7 @@ async function getUserConsole(userId, userType) {
         if (userType !== 'admin') {
             console.log(`Attempting to find console for user ID: ${userId}`);
             let userConsole = await consoleLogHistorySchema.findOne({ UserID: userId });
-            
+
             if (!userConsole) {
                 console.log(`No existing console found, creating new one...`);
                 userConsole = await consoleLogHistorySchema.create({
@@ -85,6 +131,7 @@ async function getUserConsole(userId, userType) {
         throw error;
     }
 }
+// user samples
 
 async function getStatTracker(userId, userType) {
     try {
@@ -145,7 +192,7 @@ async function getStatTracker(userId, userType) {
     }
 }
 
-// user samples 
+// user samples
 async function save() {
     try {
         // DO NOT USE IN PROD THIS WILL WIPE ALL USER DATA
@@ -262,7 +309,7 @@ save();
 
 // authenticated function. checks whether you are authenticated or not
 function ensureAuthenticated(req, res, next) {
-    const whitelistedPaths = ['/signup', '/forgot-password', '/reset-password'];
+    const whitelistedPaths = ['/login', '/signup', '/forgot-password', '/reset-password'];
     if (whitelistedPaths.some((path) => req.path.startsWith(path))) {
         return next(); // Skip authentication for whitelisted paths
     }
@@ -271,39 +318,16 @@ function ensureAuthenticated(req, res, next) {
         return next(); // Allow if authenticated
     }
 
+    console.log("redirecting ensure authenticated")
     res.redirect('/login'); // Redirect if not authenticated
 }
-// basic functions
-app.get("/login", async (req, res) => {
-    try {
-        console.log("logging in")
 
-        // Load the server entry point for login
-        const { render } = await vite.ssrLoadModule('src/entry-server.jsx');
-        
-        // Render the component
-        const appHtml = render();
-        
-        // Get and transform the template
-        let template = await vite.transformIndexHtml(req.originalUrl, fs.readFileSync('index.html', 'utf-8'));
-        
-        // Insert the rendered app and the client script tag
-        const html = template.replace(`<!--outlet-->`, `${render(req.originalUrl)}`);
-
-        res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
-
-    } catch (error) {
-        console.error('Error rendering Login:', error);
-        res.status(500).send('Internal Server Error');
-    }
-})
-
-// post route 
+// post route
 app.post("/login", express.json(), async (req, res) => {
     try {
         const { username, password } = req.body;
-        console.log("Received login data:", req.body);
-        
+        // console.log("Received login data:", req.body); hashed for security reasons
+
         const user = await User.findOne({email: username});
 
         if(!user){
@@ -313,7 +337,7 @@ app.post("/login", express.json(), async (req, res) => {
                 message: "invalid credentials"
             });
         }
-        
+
         // compare the password inserted with the ones in the database if the email is correct
         const isMatch = await user.comparePassword(password);
 
@@ -322,19 +346,19 @@ app.post("/login", express.json(), async (req, res) => {
             return res.status(401).json({
                 success: false,
                 message: "invalid credentials"
-            }); 
+            });
         }
         // Only create/get console for regular users
         if (user.UserType !== 'admin') {
             await getUserConsole(user._id, user.UserType);
         }
         console.log('console loaded');
-
         // Creates stat tracker
         await getStatTracker(user._id, user.UserType);
         console.log('Stat tracker loaded');
 
         // assigning sessions to the user while allowing them to login 
+
         req.session.user = {
             id: user._id,
             email: user.email,
@@ -351,8 +375,8 @@ app.post("/login", express.json(), async (req, res) => {
             });
         });
 
-        res.json({ 
-            success: true, 
+        res.json({
+            success: true,
             message: "Login successful",
             redirect: redirectPath
         });
@@ -511,11 +535,11 @@ app.post('/logout', ensureAuthenticated, async (req, res) => {
                 // Update console status to indicate it's closed
                 await consoleLogHistorySchema.findOneAndUpdate(
                     { UserID: userId },
-                    { 
-                        $set: { 
+                    {
+                        $set: {
                             active: false,
                             lastClosed: new Date()
-                        } 
+                        }
                     }
                 );
                 console.log(`Console closed for user ${userId}`);
@@ -540,7 +564,7 @@ app.post('/logout', ensureAuthenticated, async (req, res) => {
                 sameSite: 'strict'
             });
 
-            res.status(200).json({ 
+            res.status(200).json({
                 success: true,
                 message: 'Logout successful',
                 redirect: '/login'
@@ -559,15 +583,19 @@ app.post('/logout', ensureAuthenticated, async (req, res) => {
         });
     }
 });
+
+// Route for getting the console history
+// TODO : For some reason going to the /play route will give an error in the server, but all works as intended so
+//  that can be a low priority fix
 app.get("/get_console_history", ensureAuthenticated, async (req, res) => {
     try {
         const userId = req.session.user.id;
         const consoleHistory = await consoleLogHistorySchema.find({ UserID: userId });
-        
+
         if (!consoleHistory) {
             return res.status(404).json({ error: 'No console history found' });
         }
-        
+
         res.status(200).json(consoleHistory);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -584,11 +612,11 @@ app.post("/post_console_history",ensureAuthenticated ,async (req, res) => {
             { UserID: userId },
             { $push: { Messages: { MessageID, Message, Speaker } } }
         );
-        
+
         if (!updatedDocument) {
             return res.status(404).send('Console not found');
         }
-        
+
         res.status(200).send("Message posted successfully");
     } catch (error) {
         console.error('Error posting to console history : ', error);
@@ -806,16 +834,16 @@ app.post("/post_clear_console", ensureAuthenticated,async (req, res) => {
     try {
         // using the user id instead
         const userId = req.session.user.id;
-        
+
         const updatedDocument = await consoleLogHistorySchema.findOneAndUpdate(
             { UserID: userId },
             { $set: { Messages: [] } }
         );
-        
+
         if (!updatedDocument) {
             return res.status(404).send('Console not found');
         }
-        
+
         res.status(200).send("Console cleared successfully");
     } catch (error) {
         console.error('Error posting to clear console history : ', error);
@@ -824,61 +852,29 @@ app.post("/post_clear_console", ensureAuthenticated,async (req, res) => {
 
 })
 
-
-// Play page route.
-app.get("/play", ensureAuthenticated,async (req, res) => {
-    console.log("GET /play called")
+// This will render all pages React code. The routing specific to the page is in the App.jsx file.
+const routes = ["/play", "/my-stats", "/login", "/user-stats", "/404", "/settings"]
+app.get(routes , ensureAuthenticated, async (req, res, next) => {
+    console.log(`Generic GET called with the url :  ${req.originalUrl}`)
     try{
-        const url = req.originalUrl;
-        const template = await vite.transformIndexHtml(url, fs.readFileSync('index.html', 'utf-8'));
-        // Render React on the server side
-        const { render } = await vite.ssrLoadModule('/src/entry-server.jsx');
-        // Put the rendered React into the index file, then React is rendered on the client side when it
-        const html = template.replace(`<!--outlet-->`, `${render(url)}`);
-        res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
+            const html = await renderReact(req.originalUrl)
+            res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
 
     } catch (error) {
-        console.error(`Error on GET /play : ${error.message}`);
+        console.error(`Error on generic React GET : ${error.message}`);
         res.status(500).send('Internal Server Error');
     }
 })
 
-// My Stats page route.
-app.get("/my-stats", ensureAuthenticated,async (req, res) => {
-    console.log("GET /my-stats called")
-    try{
-        const url = req.originalUrl;
-        const template = await vite.transformIndexHtml(url, fs.readFileSync('index.html', 'utf-8'));
-        // Render React on the server side
-        const { render } = await vite.ssrLoadModule('/src/entry-server.jsx');
-        // Put the rendered React into the index file, then React is rendered on the client side when it
-        const html = template.replace(`<!--outlet-->`, `${render(url)}`);
-        res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
-
-    } catch (error) {
-        console.error(`Error on GET /my-stats : ${error.message}`);
-        res.status(500).send('Internal Server Error');
-    }
-})
-
-// User Stats page route.
-app.get("/user-stats", ensureAuthenticated,async (req, res) => {
-    console.log("GET /user-stats called");
-    try{
-        const url = req.originalUrl;
-        const template = await vite.transformIndexHtml(url, fs.readFileSync('index.html', 'utf-8'));
-        // Render React on the server side
-        const { render } = await vite.ssrLoadModule('/src/entry-server.jsx');
-        // Put the rendered React into the index file, then React is rendered on the client side when it
-        const html = template.replace(`<!--outlet-->`, `${render(url)}`);
-        res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
-
-    } catch (error) {
-        console.error(`Error on GET /user-stats : ${error.message}`);
-        res.status(500).send('Internal Server Error');
-    }
-});
-
+async function renderReact(url) {
+    let template = await vite.transformIndexHtml(url, fs.readFileSync('index.html', 'utf-8'));
+    // Render React on the server side
+    const {render} = await vite.ssrLoadModule('/src/entry-server.jsx');
+    // Put the rendered React into the index file, then React is rendered on the client side when it
+    template = template.replace(`<!--outlet-->`, `${render(url)}`);
+    // Add the dev client side rendering script in
+    return template.replace("<!--entry-client-script-->", `<script type='module' src='./src/entry-client.jsx'></script>`)
+}
 
 app.get('/reset-password', async (req, res) => {
     try {
@@ -892,14 +888,9 @@ app.get('/reset-password', async (req, res) => {
             return res.status(400).send('Invalid request. No token provided.');
         }
 
-
-        const url = req.originalUrl;
-        const template = await vite.transformIndexHtml(url, fs.readFileSync('index.html', 'utf-8'));
-        // Render React on the server side
-        const { render } = await vite.ssrLoadModule('/src/entry-server.jsx');
-        // Put the rendered React into the index file, then React is rendered on the client side when it
-        const html = template.replace(`<!--outlet-->`, `${render(url)}`);
+        const html = await renderReact(req.originalUrl)
         res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
+
     } catch (error) {
         console.error('Error rendering /reset-password:', error);
         res.status(500).send('Internal Server Error');
@@ -907,31 +898,6 @@ app.get('/reset-password', async (req, res) => {
 });
 
 app.use(vite.middlewares);
-
-app.use('*', async (req, res, next) => {
-    const reactRoutes = ['/reset-password', '/forgot-password', '/signup'];
-    if (reactRoutes.some((path) => req.path.startsWith(path))) {
-        try {
-            // Serve React frontend
-            const template = fs.readFileSync('index.html', 'utf-8');
-            const { render } = await vite.ssrLoadModule('/src/entry-server.jsx');
-            const appHtml = render(req.originalUrl);
-
-            const html = template.replace('<!--outlet-->', appHtml);
-            return res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
-        } catch (error) {
-            console.error('Error serving React route:', error);
-            return res.status(500).send('Internal Server Error');
-        }
-    }
-
-    if (req.originalUrl.startsWith('/reset-password')) {
-        return next(); // Allow reset-password route to proceed
-    }
-
-    // Redirect other unmatched routes
-    res.redirect('/my-stats');
-});
 
 // Add this after all your routes
 app.use((err, req, res, next) => {
@@ -942,14 +908,20 @@ app.use((err, req, res, next) => {
     });
 });
 
-app.use((req, res, next) => {
-    if (!req.path.startsWith('/api')) {
-        res.sendFile(path.resolve(__dirname, 'dist', 'index.html')); // Adjust path to your React build directory
-    } else {
-        next();
-    }
-});
 
+// app.use((req, res, next) => {
+//     if (!req.path.startsWith('/api')) {
+//         res.sendFile(path.resolve(__dirname, 'dist', 'index.html')); // Adjust path to your React build directory
+//     } else {
+//         next();
+//     }
+// });
+
+// TODO : Figure out what is double calling this (likely same culprit as the get_console_history bug on /play)
+// If nothing catches the request, the user will be sent to the login screen or the 404 page.
+app.use((req, res, next) => {
+    res.redirect("/404")
+})
 app.listen(4173, () => {
     console.log('http://localhost:4173.');
 });

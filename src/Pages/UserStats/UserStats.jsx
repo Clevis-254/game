@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Banner } from "../Banner.jsx";
+import "./statsPage.css"
 
 export function UserStats() {
     const [stats, setStats] = useState(null);

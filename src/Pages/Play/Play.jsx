@@ -19,10 +19,10 @@ export function Play() {
     const consoleToGameCommandRef = useRef("")
 
     // Links posting from GameLogic.jsx to Console.jsx
-    function postGameLogicToConsole (message, speaker) {
+    function postGameLogicToConsole (message, speaker, isTranscript) {
         if (consoleRef.current){
             // IDE error as current is defined at runtime, so it does run as intended.
-            consoleRef.current.callPostToConsole(message, speaker)
+            consoleRef.current.callPostToConsole(message, speaker, isTranscript)
         }
     }
 
