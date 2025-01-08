@@ -170,8 +170,51 @@ async function save() {
             Password: "approaching"
         });
 
+
+        // Example stats for Gikenyi.
+        const gikenyiStatTracker = await UserStats.create({
+            UserID: user._id,
+            timePlayed: 500,
+            pathChoices: {
+                left: 2,
+                right: 1,
+            },
+            gameCompletions: 2,
+            numberOfDeaths: 1,
+            riddleGuesses: {
+                correct: 2,
+                incorrect: 6,
+            },
+            audioFiles: {
+                hit: 12,
+                miss: 6,
+                stamina: 20,
+                damaged: 21,
+                eating: 3,
+                death: 1,
+            },
+            commands: {
+                startGame: 3,
+                pause: 1,
+                repeat: 6,
+                endGame: 1,
+                speedUp: 2,
+                slowDown: 1,
+                restart: 1,
+                clear: 3,
+                rewind: 2,
+                help: 3,
+            },
+            heatmap: {
+                forestObstacle: 0,
+                forestFight: 0,
+                riddle: 0,
+                boss: 0,
+            },
+        });
+
         // Example stats for Smelvin.
-        const statTracker = await UserStats.create({
+        const smelvinStatTracker = await UserStats.create({
             UserID: smelvin._id,
             timePlayed: 11766,
             pathChoices: {
@@ -647,26 +690,67 @@ app.get('/site/stats', async (req, res) => {
                     totalNumberOfDeaths: { $sum: "$numberOfDeaths" },
                     totalRiddleGuessesCorrect: { $sum: "$riddleGuesses.correct" },
                     totalRiddleGuessesIncorrect: { $sum: "$riddleGuesses.incorrect" },
-                    totalAudioFilesHit: { $sum: "$audioFiles.hit" },
-                    totalAudioFilesMiss: { $sum: "$audioFiles.miss" },
-                    totalAudioFilesStamina: { $sum: "$audioFiles.stamina" },
-                    totalAudioFilesDamaged: { $sum: "$audioFiles.damaged" },
-                    totalAudioFilesEating: { $sum: "$audioFiles.eating" },
-                    totalAudioFilesDeath: { $sum: "$audioFiles.death" },
-                    totalCommandsStartGame: { $sum: "$commands.startGame" },
-                    totalCommandsPause: { $sum: "$commands.pause" },
-                    totalCommandsRepeat: { $sum: "$commands.repeat" },
-                    totalCommandsEndGame: { $sum: "$commands.endGame" },
-                    totalCommandsSpeedUp: { $sum: "$commands.speedUp" },
-                    totalCommandsSlowDown: { $sum: "$commands.slowDown" },
-                    totalCommandsRestart: { $sum: "$commands.restart" },
-                    totalCommandsClear: { $sum: "$commands.clear" },
-                    totalCommandsRewind: { $sum: "$commands.rewind" },
-                    totalCommandsHelp: { $sum: "$commands.help" },
+                    totalHit: { $sum: "$audioFiles.hit" },
+                    totalMiss: { $sum: "$audioFiles.miss" },
+                    totalStamina: { $sum: "$audioFiles.stamina" },
+                    totalDamaged: { $sum: "$audioFiles.damaged" },
+                    totalEating: { $sum: "$audioFiles.eating" },
+                    totalDeath: { $sum: "$audioFiles.death" },
+                    totalStartGame: { $sum: "$commands.startGame" },
+                    totalPause: { $sum: "$commands.pause" },
+                    totalRepeat: { $sum: "$commands.repeat" },
+                    totalEndGame: { $sum: "$commands.endGame" },
+                    totalSpeedUp: { $sum: "$commands.speedUp" },
+                    totalSlowDown: { $sum: "$commands.slowDown" },
+                    totalRestart: { $sum: "$commands.restart" },
+                    totalClear: { $sum: "$commands.clear" },
+                    totalRewind: { $sum: "$commands.rewind" },
+                    totalHelp: { $sum: "$commands.help" },
                     totalHeatmapForestObstacle: { $sum: "$heatmap.forestObstacle" },
                     totalHeatmapForestFight: { $sum: "$heatmap.forestFight" },
                     totalHeatmapRiddle: { $sum: "$heatmap.riddle" },
                     totalHeatmapBoss: { $sum: "$heatmap.boss" }
+                }
+            },
+            {
+                // Calculates the schema's virtual fields
+                $addFields: {
+                    totalAudioPlayed: {
+                        $add: [
+                            "$totalHit",
+                            "$totalMiss",
+                            "$totalStamina",
+                            "$totalDamaged",
+                            "$totalEating",
+                            "$totalDeath"
+                        ]
+                    },
+                    totalCommandsUsed: {
+                        $add: [
+                            "$totalStartGame",
+                            "$totalPause",
+                            "$totalRepeat",
+                            "$totalEndGame",
+                            "$totalSpeedUp",
+                            "$totalSlowDown",
+                            "$totalRestart",
+                            "$totalClear",
+                            "$totalRewind",
+                            "$totalHelp"
+                        ]
+                    },
+                    totalRiddleGuesses: {
+                        $add: [
+                            "$totalRiddleGuessesCorrect",
+                            "$totalRiddleGuessesIncorrect"
+                        ]
+                    },
+                    totalPathChoices: {
+                        $add: [
+                            "$totalPathChoicesLeft",
+                            "$totalPathChoicesRight"
+                        ]
+                    }
                 }
             }
         ]);
@@ -680,27 +764,31 @@ app.get('/site/stats', async (req, res) => {
             const mostCompletions = await UserStats.findOne().sort({ gameCompletions: -1 }).limit(1);
 
             if (!mostPlayed) {
-                return res.status(404).send('Most played value found');
+                return res.status(404).send('Most played value not found');
             }
             if (!mostCompletions) {
-                return res.status(404).send('Most completions value found');
+                return res.status(404).send('Most completions value not found');
             }
 
             // Retrieve the names of the top players
-            const userMostPlayed = await User.findById(mostPlayed.userId);
-            const userMostCompletions = await User.findById(mostCompletions.userId);
+            const userMostPlayed = await User.findOne({ _id: mostPlayed.UserID });
+            const userMostCompletions = await User.findOne({ _id: mostCompletions.UserID });
+
+            // Calculated number of users
+            const totalUsers = await User.countDocuments();
 
             // Gathers the site-wide, mostPlayed and mostCompletions stats
             const response = {
-                siteStats: stats[0],
+                stats: stats[0],
                 mostPlayed: {
                     timePlayed: mostPlayed.timePlayed,
                     name: userMostPlayed.Name
                 },
                 mostCompletions: {
-                    timePlayed: mostCompletions.timePlayed,
+                    gameCompletions: mostCompletions.gameCompletions,
                     name: userMostCompletions.Name
-                }
+                },
+                totalUsers: totalUsers
             };
 
             res.status(200).json(response);
