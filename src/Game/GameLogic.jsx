@@ -32,6 +32,9 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     const soundEffectAudio = useRef(null)
     const musicAudio = useRef(null)
 
+    // TODO STAT TRACK: Add variables here.
+//     const UserStats = require('./models/UserStats');
+
     // When the page first loads, create an audio player not attached to the DOM, so it isn't visible.
     useEffect(() => {
         audioRef.current = document.createElement("audio")
