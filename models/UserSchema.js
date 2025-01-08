@@ -11,6 +11,12 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
         lowercase: true,
+        validate: {
+            validator: function (v) {
+                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+            },
+            message: (props) => `${props.value} is not a valid email!`,
+        },
     },
     Password: {
         type: String,
@@ -26,6 +32,12 @@ const userSchema = new mongoose.Schema({
         type: String,
         enum: ['user', 'admin'],  // Only allows 'user' or 'admin'
         default: 'user',          // Default value is 'user'
+    },
+    resetToken: {
+        type: String,  // Store the reset token
+    },
+    resetTokenExpiration: {
+        type: Date,  // Store the expiration date/time of the reset token
     },
 });
 
