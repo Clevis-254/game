@@ -4,7 +4,7 @@
     align-items: stretch;
 }
 
-.statSection1 {
+.statSection {
     width: 35%;
     float: left;
     border-radius: 25px;
@@ -12,13 +12,14 @@
     color: white;
     padding: 10px;
     border: 2px solid lightgray;
-    border: 2px solid lightgray;
     margin: 20px;
+    align-items: stretch;
     text-align: center;
+    align-content: center;
 }
 
-.statSection2 {
-    width: 35%;
+.timePlayed {
+    width: 25%;
     float: left;
     border-radius: 25px;
     background: #202020;
