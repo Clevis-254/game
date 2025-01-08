@@ -36,6 +36,7 @@ const UserStatsSchema = new mongoose.Schema({
   commands: {
     startGame: { type: Number, default: 0 },
     pause: { type: Number, default: 0 },
+    play: { type: Number, default: 0 },
     repeat: { type: Number, default: 0 },
     endGame: { type: Number, default: 0 },
     speedUp: { type: Number, default: 0 },

@@ -117,6 +117,7 @@ async function getStatTracker(userId, userType) {
                 commands: {
                     startGame: 0,
                     pause: 0,
+                    play: 0,
                     repeat: 0,
                     endGame: 0,
                     speedUp: 0,
@@ -196,6 +197,7 @@ async function save() {
             commands: {
                 startGame: 3,
                 pause: 1,
+                play: 1,
                 repeat: 6,
                 endGame: 1,
                 speedUp: 2,
@@ -238,6 +240,7 @@ async function save() {
             commands: {
                 startGame: 128,
                 pause: 21,
+                play: 21,
                 repeat: 16,
                 endGame: 0,
                 speedUp: 3,
@@ -617,6 +620,7 @@ app.get('/user/stats', ensureAuthenticated, async (req, res) => {
 // Post stats
 app.post("/user/stats", ensureAuthenticated, async (req, res) => {
     console.log("POST /user/stats called");
+
     try {
         const userId = req.session.user.id;
         const {
@@ -630,47 +634,69 @@ app.post("/user/stats", ensureAuthenticated, async (req, res) => {
             heatmap
         } = req.body;
 
-        const updatedDocument = await UserStatsSchema.findOneAndUpdate(
+        // Prepare the update object
+        const updateFields = {};
+
+        // Increments stat depending on context
+        if (timePlayed) updateFields.timePlayed = timePlayed;
+
+        if (pathChoices) {
+            if (pathChoices.left) updateFields["pathChoices.left"] = pathChoices.left;
+            if (pathChoices.right) updateFields["pathChoices.right"] = pathChoices.right;
+        }
+
+        if (gameCompletions) updateFields.gameCompletions = gameCompletions;
+
+        if (numberOfDeaths) updateFields.numberOfDeaths = numberOfDeaths;
+
+        if (riddleGuesses) {
+            if (riddleGuesses.correct) updateFields["riddleGuesses.correct"] = riddleGuesses.correct;
+            if (riddleGuesses.incorrect) updateFields["riddleGuesses.incorrect"] = riddleGuesses.incorrect;
+        }
+
+        if (audioFiles) {
+            if (audioFiles.hit) updateFields["audioFiles.hit"] = audioFiles.hit;
+            if (audioFiles.miss) updateFields["audioFiles.miss"] = audioFiles.miss;
+            if (audioFiles.stamina) updateFields["audioFiles.stamina"] = audioFiles.stamina;
+            if (audioFiles.damaged) updateFields["audioFiles.damaged"] = audioFiles.damaged;
+            if (audioFiles.eating) updateFields["audioFiles.eating"] = audioFiles.eating;
+            if (audioFiles.death) updateFields["audioFiles.death"] = audioFiles.death;
+        }
+
+        if (commands) {
+            if (commands.startGame) updateFields["commands.startGame"] = commands.startGame;
+            if (commands.pause) updateFields["commands.pause"] = commands.pause;
+            if (commands.play) updateFields["commands.play"] = commands.play;
+            if (commands.repeat) updateFields["commands.repeat"] = commands.repeat;
+            if (commands.endGame) updateFields["commands.endGame"] = commands.endGame;
+            if (commands.speedUp) updateFields["commands.speedUp"] = commands.speedUp;
+            if (commands.slowDown) updateFields["commands.slowDown"] = commands.slowDown;
+            if (commands.restart) updateFields["commands.restart"] = commands.restart;
+            if (commands.clear) updateFields["commands.clear"] = commands.clear;
+            if (commands.rewind) updateFields["commands.rewind"] = commands.rewind;
+            if (commands.help) updateFields["commands.help"] = commands.help;
+        }
+
+        if (heatmap) {
+            if (heatmap.forestObstacle) updateFields["heatmap.forestObstacle"] = heatmap.forestObstacle;
+            if (heatmap.forestFight) updateFields["heatmap.forestFight"] = heatmap.forestFight;
+            if (heatmap.riddle) updateFields["heatmap.riddle"] = heatmap.riddle;
+            if (heatmap.boss) updateFields["heatmap.boss"] = heatmap.boss;
+        }
+
+        // Updates stat field in database
+        const updatedDocument = await UserStats.findOneAndUpdate(
             { UserID: userId },
-            {
-                $inc: {
-                    timePlayed: timePlayed || 0,
-                    "pathChoices.left": pathChoices?.left || 0,
-                    "pathChoices.right": pathChoices?.right || 0,
-                    gameCompletions: gameCompletions || 0,
-                    numberOfDeaths: numberOfDeaths || 0,
-                    "riddleGuesses.correct": riddleGuesses?.correct || 0,
-                    "riddleGuesses.incorrect": riddleGuesses?.incorrect || 0,
-                    "audioFiles.hit": audioFiles?.hit || 0,
-                    "audioFiles.miss": audioFiles?.miss || 0,
-                    "audioFiles.stamina": audioFiles?.stamina || 0,
-                    "audioFiles.damaged": audioFiles?.damaged || 0,
-                    "audioFiles.eating": audioFiles?.eating || 0,
-                    "audioFiles.death": audioFiles?.death || 0,
-                    "commands.startGame": commands?.startGame || 0,
-                    "commands.pause": commands?.pause || 0,
-                    "commands.repeat": commands?.repeat || 0,
-                    "commands.endGame": commands?.endGame || 0,
-                    "commands.speedUp": commands?.speedUp || 0,
-                    "commands.slowDown": commands?.slowDown || 0,
-                    "commands.restart": commands?.restart || 0,
-                    "commands.clear": commands?.clear || 0,
-                    "commands.rewind": commands?.rewind || 0,
-                    "commands.help": commands?.help || 0,
-                    "heatmap.forestObstacle": heatmap?.forestObstacle || 0,
-                    "heatmap.forestFight": heatmap?.forestFight || 0,
-                    "heatmap.riddle": heatmap?.riddle || 0,
-                    "heatmap.boss": heatmap?.boss || 0
-                }
-            },
+            { $inc: updateFields }
         );
 
         if (!updatedDocument) {
-            return res.status(404).send("User stats error");
+            return res.status(404).send("User stats not found");
         }
 
         res.status(200).send("User stats updated successfully");
     } catch (error) {
+        console.error("Error updating user stats:", error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -698,6 +724,7 @@ app.get('/site/stats', async (req, res) => {
                     totalDeath: { $sum: "$audioFiles.death" },
                     totalStartGame: { $sum: "$commands.startGame" },
                     totalPause: { $sum: "$commands.pause" },
+                    totalPlay: { $sum: "$commands.play" },
                     totalRepeat: { $sum: "$commands.repeat" },
                     totalEndGame: { $sum: "$commands.endGame" },
                     totalSpeedUp: { $sum: "$commands.speedUp" },
@@ -729,6 +756,7 @@ app.get('/site/stats', async (req, res) => {
                         $add: [
                             "$totalStartGame",
                             "$totalPause",
+                            "$totalPlay",
                             "$totalRepeat",
                             "$totalEndGame",
                             "$totalSpeedUp",

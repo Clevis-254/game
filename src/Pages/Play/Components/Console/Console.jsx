@@ -89,6 +89,26 @@ export const Console =
             }
         }
 
+        async function incrementStat(command){
+            try {
+                const response = await fetch("/user/stats", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        commands: { [command]: 1 },
+                    }),
+                });
+
+                if (!response.ok) {
+                    console.error(`Failed to update command stats: ${response.statusText}`);
+                }
+            } catch (error) {
+                console.error("Network or server error:", error);
+            }
+        }
+
 
         // TODO STAT TRACK : Number of commands sent in by user, however note when implementing we dont want
         //  to track when the user doesn't input anything which is handled at the very bottom in the default case.
@@ -110,6 +130,7 @@ export const Console =
                 case "clear":
                     setConsoleText([...consoleText, ("Console : Clearing Console now...")])
                     clear_console_history()
+                    incrementStat("clear"); // Tracks command use
                     break
                 case "start game":
                     printUserInput()
@@ -117,6 +138,7 @@ export const Console =
                     setConsoleText([...consoleText, `Console : ${consoleResponse}`])
                     commandToGame(console_input_text)
                     post_new_input(consoleResponse, "Console")
+                    incrementStat("startGame"); // Tracks command use
                     break
                 case "help":
                     printUserInput()
@@ -135,19 +157,45 @@ export const Console =
                         setConsoleText([...consoleText, `Console : ${outputList[i]}`])
                         post_new_input(outputList[i], "Console")
                     }
+                    incrementStat("help"); // Tracks command use
                     break
                 case "play":
+                    printUserInput()
+                    commandToGame(console_input_text)
+                    incrementStat("play"); // Tracks command use
+                    break
                 case "pause":
+                    printUserInput()
+                    commandToGame(console_input_text)
+                    incrementStat("pause"); // Tracks command use
+                    break
                 case "speed up":
+                    printUserInput()
+                    commandToGame(console_input_text)
+                    incrementStat("speedUp"); // Tracks command use
+                    break
                 case "slow down":
                 // TODO STAT TRACK : If I implement rewinding for custom seconds (unlikely) then potentially add the total
                 //  seconds rewound as a stat.
                 // TODO : make it so rewind can be "rewind x" for x seconds. Might need to pre-process or use an IF for this.
+                    printUserInput()
+                    commandToGame(console_input_text)
+                    incrementStat("slowDown"); // Tracks command use
+                    break
                 case "rewind":
+                    printUserInput()
+                    commandToGame(console_input_text)
+                    incrementStat("rewind"); // Tracks command use
+                    break
                 case "end game":
+                    printUserInput()
+                    commandToGame(console_input_text)
+                    incrementStat("endGame"); // Tracks command use
+                    break
                 case "restart":
                     printUserInput()
                     commandToGame(console_input_text)
+                    incrementStat("restart"); // Tracks command use
                     break
                 default:
                     // In case it is a direction from the game eg "left" or "right". Pass it on

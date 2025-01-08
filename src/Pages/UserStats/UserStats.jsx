@@ -119,6 +119,7 @@ export function UserStats() {
                     <h4>Start Game: {stats.stats.totalStartGame}</h4>
                     <h4>Repeat: {stats.stats.totalRepeat}</h4>
                     <h4>Pause: {stats.stats.totalPause}</h4>
+                    <h4>Play: {stats.stats.totalPlay}</h4>
                     <h4>End Game: {stats.stats.totalEndGame}</h4>
                     <h4>Speed Up: {stats.stats.totalSpeedUp}</h4>
                     <h4>Slow Down: {stats.stats.totalSlowDown}</h4>

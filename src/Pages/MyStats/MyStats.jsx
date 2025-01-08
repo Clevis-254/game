@@ -107,6 +107,7 @@ export function MyStats(){
                     <h4>Start Game: {stats.commands.startGame}</h4>
                     <h4>Repeat: {stats.commands.repeat}</h4>
                     <h4>Pause: {stats.commands.pause}</h4>
+                    <h4>Play: {stats.commands.play}</h4>
                     <h4>End Game: {stats.commands.endGame}</h4>
                     <h4>Speed Up: {stats.commands.speedUp}</h4>
                     <h4>Slow Down: {stats.commands.slowDown}</h4>
