@@ -30,6 +30,7 @@ export default defineConfig(({ ssrBuild }) => {
 
     // CSR build
     return {
+        base: "/dist/client",
         plugins: [react()],
         resolve: {
             alias: {

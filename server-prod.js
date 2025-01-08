@@ -1,7 +1,6 @@
 import fs from 'fs';
 import express from 'express';
 import mongoose from 'mongoose'
-// import { createServer } from 'vite';
 import consoleLogHistorySchema from "./models/consoleLogHistory.js";
 import bodyParser from "body-parser";
 import session from 'express-session';
@@ -29,12 +28,7 @@ app.use(
 //  middleware configurations
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-// const vite = await createServer({
-//     server: {
-//         middlewareMode: true,
-//     },
-//     appType: 'custom',
-// });
+
 // creating authentication session
 // Update your session configuration
 app.use(session({
@@ -460,23 +454,30 @@ app.get(routes , ensureAuthenticated, async (req, res, next) => {
         res.status(500).send('Internal Server Error');
     }
 })
-import { fileURLToPath } from 'url';
 
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = path.dirname(__filename);
-//
-// console.log(__dirname); // Logs the directory where the current file is located
-//
-// app.use('/dist', express.static(path.join(__dirname, 'dist')));
+const staticDir = path.join(process.cwd(), 'dist/client');
+console.log('Static Directory:', staticDir);
+app.use(express.static(staticDir));
 async function renderReact(url) {
+    // Import entry-clients hashed name using the name from manifest.json
     const manifest = JSON.parse(fs.readFileSync(path.join("dist/client/.vite", 'manifest.json'), 'utf-8'));
     const entryClient = manifest['src/entry-client.jsx'].file; // Get the hashed file
-    const template = fs.readFileSync('index.html', 'utf-8');
+
+    let template = fs.readFileSync('index.html', 'utf-8');
+
+    // Import the CSS file from manifest.json (vite build optimises it into 1 file)
+    const entry = manifest['src/entry-client.jsx'];
+    if (entry?.css?.[0]) {
+        const cssFile = entry.css[0];
+        const cssLink = `<link rel="stylesheet" href="${cssFile}">`;
+        template = template.replace('</head>', `${cssLink}\n</head>`);
+    }
     // Render React on the server side
     const {render} = await import('./dist/server/entry-server.js')
     // Put the rendered React into the index file, then React is rendered on the client side when it
     const html = template.replace(`<!--outlet-->`, `${render(url)}`);
-    return html.replace("<!--entry-client-script-->", `<script type='module' src='dist/client/${entryClient}'></script>`)
+    // Add the prod client side rendering script
+    return html.replace("<!--entry-client-script-->", `<script type='module' src='${entryClient}'></script>`)
 }
 
 app.get('/reset-password', async (req, res) => {
@@ -500,8 +501,6 @@ app.get('/reset-password', async (req, res) => {
     }
 });
 
-// app.use(vite.middlewares);
-
 // Add this after all your routes
 app.use((err, req, res, next) => {
     console.error(err.stack);
@@ -522,9 +521,9 @@ app.use((err, req, res, next) => {
 
 // TODO : Figure out what is double calling this (likely same culprit as the get_console_history bug on /play)
 // If nothing catches the request, the user will be sent to the login screen or the 404 page.
-// app.use((req, res, next) => {
-//     res.redirect("/404")
-// })
+app.use((req, res, next) => {
+    res.redirect("/404")
+})
 app.listen(4173, () => {
     console.log('http://localhost:4173.');
 });

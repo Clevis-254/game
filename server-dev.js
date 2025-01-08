@@ -462,11 +462,13 @@ app.get(routes , ensureAuthenticated, async (req, res, next) => {
 })
 
 async function renderReact(url) {
-    const template = await vite.transformIndexHtml(url, fs.readFileSync('index.html', 'utf-8'));
+    let template = await vite.transformIndexHtml(url, fs.readFileSync('index.html', 'utf-8'));
     // Render React on the server side
     const {render} = await vite.ssrLoadModule('/src/entry-server.jsx');
     // Put the rendered React into the index file, then React is rendered on the client side when it
-    return template.replace(`<!--outlet-->`, `${render(url)}`);
+    template = template.replace(`<!--outlet-->`, `${render(url)}`);
+    // Add the dev client side rendering script in
+    return template.replace("<!--entry-client-script-->", `<script type='module' src='./src/entry-client.jsx'></script>`)
 }
 
 app.get('/reset-password', async (req, res) => {
