@@ -172,6 +172,27 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         }
     }
 
+    // Increments riddle guesses
+    async function updatePathChoice(left, right) {
+        try {
+            const response = await fetch("/user/stats", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    pathChoices: { left, right }
+                }),
+            });
+
+            if (!response.ok) {
+                console.error(`Failed to update stats: ${response.statusText}`);
+            }
+        } catch (error) {
+            console.error("Error:", error);
+        }
+    }
+
     // useEffect to get commands from the console to gameLogic
     // Uses a state variable to trigger this function, then uses a ref to change the value again
     // without re-rendering. Uses isInitialRenderConsoleToGame so it doesn't run on initial render
@@ -660,7 +681,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     // Picked left on forest branching choice (fight)
     async function forestLeft(){
 
-        // TODO jack PATH CHOICE
+        updatePathChoice(1, 0) // +1 left
         // TODO JACK START FIGHT TIMER
 
         postTextToConsole("You picked 'left'", "")
@@ -687,7 +708,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     // Cliff obstacle
     async function forestRight(){
 
-        // TODO jack PATH CHOICE
+        updatePathChoice(0, 1) // +1 right
         // TODO JACK START OBSTACLE TIMER
 
         postTextToConsole("You picked 'right'", "")
