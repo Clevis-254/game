@@ -102,10 +102,10 @@ export const Console =
                 });
 
                 if (!response.ok) {
-                    console.error(`Failed to update command stats: ${response.statusText}`);
+                    console.error(`Failed to update stats: ${response.statusText}`);
                 }
             } catch (error) {
-                console.error("Network or server error:", error);
+                console.error("Error:", error);
             }
         }
 

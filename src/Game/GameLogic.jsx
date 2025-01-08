@@ -163,26 +163,29 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     }
 
 
-    // TODO STAT TRACK : Stop the in game time tracking here
-    //  Please note you might need to use useEffect or something of the
-    //  sort that will track when the page is left / closed / reloaded
-    //  by the user to stop the timer as well
-    // Resets all possible variables it can and stops/restarts the game
-    async function endGame(restart){
-        if (cancelGame) cancelGame("Ended Game")
-        audioPause()
-        transcriptInterrupt.current = true
-        gameStarted.current = false
-        // Just to make sure the transcript is printed before this.
-        await new Promise(resolve => setTimeout(resolve, 300))
-        delayedPosition.current = 0
-        if(restart){
-            postTextToConsole("Starting game from the beginning.", "Console")
-            startGame()
-        } else {
-            postTextToConsole("Game session ended.", "Console")
+    // Posts time played in seconds to server
+    async function updateTimePlayed(gameSeconds){
+        try {
+            const response = await fetch("/user/stats", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    timePlayed: gameSeconds,
+                }),
+            });
+
+            if (!response.ok) {
+                console.error(`Failed to update stats: ${response.statusText}`);
+            }
+        } catch (error) {
+            console.error("Error:", error);
         }
     }
+
+    // Stores the time the game starts
+    let startTime = useRef(null)
 
     // TODO STAT TRACK : Add in-game tracking time here.
     let gameStarted = useRef(false)
@@ -196,6 +199,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             return
         }
         gameStarted.current = true
+        startTime.current = new Date() // Tracks start time
+
         // Promise used to cancel the game at any point
         await new Promise(async (resolve, reject) => {
             cancelGame = reject;
@@ -221,6 +226,48 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             resolve()
         })
     }
+
+    // TODO STAT TRACK : Stop the in game time tracking here
+    //  Please note you might need to use useEffect or something of the
+    //  sort that will track when the page is left / closed / reloaded
+    //  by the user to stop the timer as well
+    // Resets all possible variables it can and stops/restarts the game
+    async function endGame(restart){
+        if (cancelGame) cancelGame("Ended Game")
+        audioPause()
+        transcriptInterrupt.current = true
+        gameStarted.current = false
+
+        // Calculates how long the game lasted in seconds
+        const elapsedTime = Math.floor((new Date() - startTime.current) / 1000)
+        updateTimePlayed(elapsedTime)
+
+        // Just to make sure the transcript is printed before this.
+        await new Promise(resolve => setTimeout(resolve, 300))
+        delayedPosition.current = 0
+        if(restart){
+            postTextToConsole("Starting game from the beginning.", "Console")
+            startGame()
+        } else {
+            postTextToConsole("Game session ended.", "Console")
+        }
+    }
+
+    // Calculates time played in seconds when the page is closed.
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            if (gameStarted.current) {
+                const elapsedTime = Math.floor((new Date() - startTime.current) / 1000)
+                updateTimePlayed(elapsedTime)
+            }
+        }
+        window.addEventListener('beforeunload', handleBeforeUnload)
+
+        // Cleanup function to remove event listeners when the component is unmounted or game is stopped
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload)
+        }
+    }, [])
 
     // TODO STAT TRACK : Alternative place(s) to put the heatmap data instead of the switch, I
     //  would personally recommend the switch to keep code cleaner and keep heatmap tracking code bundled
