@@ -54,6 +54,39 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         }
     }
 
+    // Updates time spent in an area for heatmap
+    async function updateHeatmap(area, time) {
+        try {
+            // Construct the object in the right format for POST request
+            const heatmap = {
+                [area]: time
+            };
+
+            // Make the POST request to increment the stat
+            const response = await fetch("/user/stats", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    heatmap,
+                }),
+            });
+
+            if (!response.ok) {
+                console.error(`Failed to increment heatmap event stat: ${response.statusText}`);
+            }
+        } catch (error) {
+            console.error("Error:", error);
+        }
+    }
+
+    // Stores the time the player enters an area
+    let startTimeFight = useRef(null)
+    let startTimeObstacle = useRef(null)
+    let startTimeRiddle = useRef(null)
+    let startTimeBoss = useRef(null)
+
     // When the page first loads, create an audio player not attached to the DOM, so it isn't visible.
     useEffect(() => {
         audioRef.current = document.createElement("audio")
@@ -336,6 +369,11 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                                     } else {
                                         updateStat(0, 0, 1) // +1 death
                                         postTextToConsole("Musashi was knocked into the ocean! Game Over.", "")
+
+                                        // Heatmap timers
+//                                         const elapsedTimeObstacle = Math.floor((new Date() - startTimeObstacle.current) / 1000)
+//                                         updateHeatmap("forestObstacle", elapsedTimeObstacle)
+
                                         endGame(true)
                                     }
                                 } else {
@@ -405,6 +443,11 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         const elapsedTime = Math.floor((new Date() - startTime.current) / 1000)
         updateStat(elapsedTime, 0, 0)
 
+//         updateHeatmap("forestFight", elapsedTimeFight)
+//         updateHeatmap("forestObstacle", elapsedTimeObstacle)
+//         updateHeatmap("riddle", elapsedTimeFight)
+//         updateHeatmap("boss", elapsedTimeObstacle)
+
         // Just to make sure the transcript is printed before this.
         await new Promise(resolve => setTimeout(resolve, 300))
         delayedPosition.current = 0
@@ -432,7 +475,6 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             window.removeEventListener('beforeunload', handleBeforeUnload)
         }
     }, [])
-
 
     async function tutorialQuestion(){
         // Prevents this from running multiple times
@@ -543,10 +585,16 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     }
 
     async function riddleStart(){
-        await new Promise(async (resolve, reject) => {
 
-            // TODO jack START RIDDLE TIME
-            // TODO jack END FOREST TIME
+        startTimeRiddle.current = new Date() // captures time riddle section begins
+
+        // Ends forest section timers
+//         const elapsedTimeFight = Math.floor((new Date() - startTimeFight.current) / 1000)
+//         updateHeatmap("forestFight", elapsedTimeFight)
+//         const elapsedTimeObstacle = Math.floor((new Date() - startTimeObstacle.current) / 1000)
+//         updateHeatmap("forestObstacle", elapsedTimeObstacle)
+
+        await new Promise(async (resolve, reject) => {
 
             cancelGame = reject;
 
@@ -635,10 +683,14 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
     // Start final fight
     async function finale(){
-        await new Promise(async (resolve, reject) => {
 
-            // TODO jack END RIDDLE TIME
-            // TODO jack START BOSS TIME
+        // Ends riddle section timer
+//         const elapsedTimeRiddle = Math.floor((new Date() - startTimeRiddle.current) / 1000)
+//         updateHeatmap("riddle", elapsedTimeRiddle)
+
+        startTimeBoss.current = new Date() // Captures time boss section starts
+
+        await new Promise(async (resolve, reject) => {
 
             cancelGame = reject;
 
@@ -657,11 +709,14 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
     // After final fight
     async function ending(){
-        await new Promise(async (resolve, reject) => {
 
-            // TODO jack
-            updateStat(0 , 1, 0) // +1 game completion
-            // END BOSS TIME
+         updateStat(0 , 1, 0) // +1 game completion
+
+        // Ends boss section timer
+//         const elapsedTimeBoss = Math.floor((new Date() - startTimeBoss.current) / 1000)
+//         updateHeatmap("boss", elapsedTimeBoss)
+
+        await new Promise(async (resolve, reject) => {
 
             cancelGame = reject;
 
@@ -682,7 +737,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     async function forestLeft(){
 
         updatePathChoice(1, 0) // +1 left
-        // TODO JACK START FIGHT TIMER
+        startTimeFight.current = new Date()
 
         postTextToConsole("You picked 'left'", "")
         await new Promise(async (resolve, reject) => {
@@ -709,7 +764,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     async function forestRight(){
 
         updatePathChoice(0, 1) // +1 right
-        // TODO JACK START OBSTACLE TIMER
+        startTimeObstacle.current = new Date()
 
         postTextToConsole("You picked 'right'", "")
         await new Promise(async (resolve, reject) => {
@@ -913,6 +968,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             endGame(true)
             musicAudio.current.currentTime = 0
             musicAudio.current.pause()
+
             return
         }
 
