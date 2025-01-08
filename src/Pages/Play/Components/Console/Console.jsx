@@ -214,6 +214,8 @@ export const Console =
             }
         }
 
+        // TODO STAT TRACK: fetchStatTracking?
+
         // TODO : Check if this is even needed anymore.
         if(historyLoaded === false){
             fetchConsoleHistory()
