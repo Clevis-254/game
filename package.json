@@ -9,9 +9,8 @@
     "dev": "node server-dev.js",
     "build:client": "vite build --outDir dist/client",
     "build:server": "vite build --ssr src/entry-server.jsx --outDir dist/server",
-    "build:function": "vite build --ssr src/function.js --outDir dist/function",
-    "build": "npm run build:client && npm run build:server && npm run build:function",
-    "serve": "node server-prod.js"
+    "build": "npm run build:client && npm run build:server",
+    "prod": "node server-prod.js"
   },
   "keywords": [],
   "author": "",

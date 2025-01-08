@@ -19,10 +19,6 @@ app.use('*', async (_, res) => {
         const { render } = await import('./dist/server/entry-server.js');
 
 
-        // const { getServerData } = await import('./dist/function/function.js');
-        // const data = await getServerData();
-        // const script = `<script>window.__data__=${JSON.stringify(data)}</script>`;
-
         // const html = template.replace(`<!--outlet-->`, `${render(data)} ${script}`);
         const html = template.replace(`<!--outlet-->`, `${render(data)}`);
         res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
