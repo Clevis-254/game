@@ -301,9 +301,6 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         }
     }
 
-    // Stores the time the game starts
-    let startTime = useRef(null)
-
     // Posts time played in seconds to server
     async function updateTimePlayed(gameSeconds){
         try {
@@ -324,6 +321,9 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             console.error("Error:", error);
         }
     }
+
+    // Stores the time the game starts
+    let startTime = useRef(null)
 
     // TODO STAT TRACK : Stop the in game time tracking here
     //  Please note you might need to use useEffect or something of the
@@ -369,6 +369,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             window.removeEventListener('beforeunload', handleBeforeUnload)
         }
     }, [])
+
 
     async function tutorialQuestion(){
         // Prevents this from running multiple times
@@ -427,13 +428,9 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     let cancelGame
 
     async function startGame() {
-        // Prevents this from running multiple times
-        if (gameStarted.current === true){
-            postTextToConsole("The game is already started", "Console")
-            return
-        }
-        gameStarted.current = true
-        startTime.current = new Date() // Tracks start time
+
+        // Tracks start time
+        startTime.current = new Date()
 
         // Promise used to cancel the game at any point
         await new Promise(async (resolve, reject) => {
