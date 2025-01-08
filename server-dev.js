@@ -448,7 +448,7 @@ app.post("/post_clear_console", ensureAuthenticated,async (req, res) => {
 })
 
 // This will render all pages React code. The routing specific to the page is in the App.jsx file.
-const routes = ["/play", "/my-stats", "/login", "/user-stats", "/404"]
+const routes = ["/play", "/my-stats", "/login", "/user-stats", "/404", "/settings"]
 app.get(routes , ensureAuthenticated, async (req, res, next) => {
     console.log(`Generic GET called with the url :  ${req.originalUrl}`)
     try{
@@ -510,6 +510,7 @@ app.use((err, req, res, next) => {
 //     }
 // });
 
+// TODO : Figure out what is double calling this (likely same culprit as the get_console_history bug on /play)
 // If nothing catches the request, the user will be sent to the login screen or the 404 page.
 app.use((req, res, next) => {
     res.redirect("/404")
