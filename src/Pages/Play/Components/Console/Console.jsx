@@ -1,5 +1,6 @@
 import {useState, useRef, useEffect, forwardRef, useImperativeHandle} from 'react'
 import './ConsoleStyling.css';
+import {speakText} from "@/utility/Speech.jsx";
 // NOTE : No game logic should be in this module.
 // Accessibility logic is fine (e.g rewind to last dialogue)
 // DESIGN NOTE : We fetch the entire console history every time we reload because this is a small game with few
@@ -14,8 +15,8 @@ export const Console =
         // This allows us to add messages to the console from external components
         useImperativeHandle(ref,() => {
             return {
-                callPostToConsole: (message, speaker) => {
-                    post_new_input(message,speaker)
+                callPostToConsole: (message, speaker, isTranscript) => {
+                    post_new_input(message,speaker, isTranscript)
                 }
             }
         })
@@ -27,6 +28,12 @@ export const Console =
         const inputRef = useRef(null);
 
         const transcriptContainerRef = useRef(null)
+
+        // Runs when the page first loads to initially get the history
+        useEffect(() => {
+            fetchConsoleHistory()
+        }, [])
+
 
         const handleEnterKeyDown = (event) => {
             if (event.key === 'Enter') {
@@ -76,10 +83,6 @@ export const Console =
             scrollConsoleToBottom()
         }, [consoleText])
 
-        // TODO : Potentially replace with useEffect or a ref (might not matter since its only changed once)
-        // Used to check if the history has been loaded yet upon first visit
-        const [historyLoaded, setHistoryLoaded] = useState(false)
-
         function commandToGame(command){
             consoleToGameCommandRef.current = command
             if(commandToGameTrigger === true){
@@ -108,18 +111,18 @@ export const Console =
             //  just add the line(s) to track below but dont add a break so it still falls through.
             switch (console_input_text) {
                 case "clear":
+                    // User should never see this theoretically, but it's here just in case
                     setConsoleText([...consoleText, ("Console : Clearing Console now...")])
                     clear_console_history()
                     break
                 case "start game":
-                    printUserInput()
-                    const consoleResponse = "Starting game now..."
-                    setConsoleText([...consoleText, `Console : ${consoleResponse}`])
+                    post_new_input(console_input_text, "User")
                     commandToGame(console_input_text)
-                    post_new_input(consoleResponse, "Console")
+                    post_new_input("Starting game now...", "Console")
                     break
+                // TODO : Pause transcript until this is done narrating.
                 case "help":
-                    printUserInput()
+                    post_new_input(console_input_text, "User")
                     const outputList = ["Here is a list of all current commands",
                         "- 'start game' : Starts the game from the last saved point",
                         "- 'end game' : Ends the game session",
@@ -132,9 +135,18 @@ export const Console =
                         "- 'rewind' : Rewind 10 seconds of dialogue"
                     ]
                     for (let i in outputList) {
-                        setConsoleText([...consoleText, `Console : ${outputList[i]}`])
                         post_new_input(outputList[i], "Console")
                     }
+                    break
+                case "help combat":
+                    post_new_input("In this game you will fight many enemies in battle. These battles are turn based." +
+                "In battle you have four moves," +
+                " slash, stab, parry slash and parry stab. Slash is a standard attack that can be parried with" +
+                "parry slash, stab is a move that you charge up on your initial turn and can then either go through" +
+                "with it  on your next turn and do lots of damage to your opponent or you can switch to slash to trick your opponent." +
+                "Be wary however as if your opponent predicts this and picks parry slash then you will the stunned and" +
+                "miss a turn. The same goes for if your opponent predicts you follow through and they pick parry stab." +
+                "This makes stab a risky move but with high reward.", "")
                     break
                 case "play":
                 case "pause":
@@ -146,22 +158,15 @@ export const Console =
                 case "rewind":
                 case "end game":
                 case "restart":
-                    printUserInput()
+                    post_new_input(console_input_text, "User")
                     commandToGame(console_input_text)
                     break
                 default:
                     // In case it is a direction from the game eg "left" or "right". Pass it on
                     if (console_input_text !== "") {
-                        printUserInput()
+                        post_new_input(console_input_text, "User")
                         commandToGame(console_input_text)
                     }
-            }
-
-            // TODO : Probably could remove this and just replace it with the new post_new_input method
-            // Print the user input to console
-            function printUserInput() {
-                setConsoleText([...consoleText, ("User : " + console_input_text)])
-                post_new_input(console_input_text, "User")
             }
 
             // TODO : Check if this is needed since we now do a useEffect for consoleText changes
@@ -170,7 +175,13 @@ export const Console =
 
         // TODO STAT TRACK : Total messages sent to the console per user and overall
         // POST to db the new message
-        function post_new_input(message, speaker) {
+        function post_new_input(message, speaker, isTranscript) {
+            if(speaker !== "User" && !isTranscript) speakText(message)
+            if(speaker !== ""){
+                setConsoleText((prevConsoleText) =>[...prevConsoleText, `${speaker} : ${message}`])
+            } else {
+                setConsoleText((prevConsoleText) =>[...prevConsoleText, `${message}`])
+            }
             fetch('/post_console_history', {
                 method: "POST",
                 headers: {
@@ -182,15 +193,14 @@ export const Console =
                     Speaker: speaker
                 })
             });
-            fetchConsoleHistory()
         }
 
         // POST to clear console history in the db
         function clear_console_history() {
+            setConsoleText([])
             fetch("/post_clear_console", {
                 method : "POST"
             })
-            setConsoleText([])
         }
 
         // Get the console history from the db
@@ -212,14 +222,6 @@ export const Console =
             } catch (error) {
                 console.error('Error fetching console history:', error);
             }
-        }
-
-        // TODO STAT TRACK: fetchStatTracking?
-
-        // TODO : Check if this is even needed anymore.
-        if(historyLoaded === false){
-            fetchConsoleHistory()
-            setHistoryLoaded(true)
         }
 
         // TODO : Make it so if the user tries scrolling up then it wont force you to the bottom. Aka if
