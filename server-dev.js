@@ -12,6 +12,7 @@ import nodemailer from 'nodemailer';
 import User from './models/UserSchema.js';
 import error from "express/lib/view.js";
 import path from "path";
+import {redirect} from "react-router-dom";
 
 const app = express();
 
@@ -104,7 +105,7 @@ async function getUserConsole(userId, userType) {
         if (userType !== 'admin') {
             console.log(`Attempting to find console for user ID: ${userId}`);
             let userConsole = await consoleLogHistorySchema.findOne({ UserID: userId });
-            
+
             if (!userConsole) {
                 console.log(`No existing console found, creating new one...`);
                 userConsole = await consoleLogHistorySchema.create({
@@ -130,6 +131,7 @@ async function getUserConsole(userId, userType) {
         throw error;
     }
 }
+// user samples
 
 async function getStatTracker(userId, userType) {
     try {
@@ -152,16 +154,26 @@ async function getStatTracker(userId, userType) {
                     incorrect: 0,
                 },
                 audioFiles: {
+                    inputNotification: 0,
                     hit: 0,
-                    miss: 0,
-                    stamina: 0,
-                    damaged: 0,
-                    eating: 0,
                     death: 0,
+                    intro: 0,
+                    forestIntro: 0,
+                    forestFight: 0,
+                    battleMusic: 0,
+                    forestObstacle: 0,
+                    riddleIntro: 0,
+                    notHere: 0,
+                    ahRiddle: 0,
+                    riddle: 0,
+                    openDoor: 0,
+                    finale: 0,
+                    ending: 0,
                 },
                 commands: {
                     startGame: 0,
                     pause: 0,
+                    play: 0,
                     repeat: 0,
                     endGame: 0,
                     speedUp: 0,
@@ -190,7 +202,7 @@ async function getStatTracker(userId, userType) {
     }
 }
 
-// user samples 
+// user samples
 async function save() {
     try {
         // DO NOT USE IN PROD THIS WILL WIPE ALL USER DATA
@@ -231,16 +243,26 @@ async function save() {
                 incorrect: 6,
             },
             audioFiles: {
-                hit: 12,
-                miss: 6,
-                stamina: 20,
-                damaged: 21,
-                eating: 3,
-                death: 1,
+                inputNotification: 45,
+                hit: 34,
+                death: 34,
+                intro: 25,
+                forestIntro: 25,
+                forestFight: 23,
+                battleMusic: 23,
+                forestObstacle: 23,
+                riddleIntro: 34,
+                notHere: 23,
+                ahRiddle: 23,
+                riddle: 25,
+                openDoor: 22,
+                finale: 21,
+                ending: 10,
             },
             commands: {
                 startGame: 3,
                 pause: 1,
+                play: 1,
                 repeat: 6,
                 endGame: 1,
                 speedUp: 2,
@@ -251,10 +273,10 @@ async function save() {
                 help: 3,
             },
             heatmap: {
-                forestObstacle: 0,
-                forestFight: 0,
-                riddle: 0,
-                boss: 0,
+                forestObstacle: 100,
+                forestFight: 50,
+                riddle: 200,
+                boss: 150,
             },
         });
 
@@ -273,16 +295,26 @@ async function save() {
                 incorrect: 0,
             },
             audioFiles: {
-                hit: 237,
-                miss: 0,
-                stamina: 237,
-                damaged: 0,
-                eating: 893,
-                death: 0,
+                inputNotification: 425,
+                hit: 134,
+                death: 134,
+                intro: 125,
+                forestIntro: 125,
+                forestFight: 123,
+                battleMusic: 123,
+                forestObstacle: 123,
+                riddleIntro: 134,
+                notHere: 123,
+                ahRiddle: 123,
+                riddle: 125,
+                openDoor: 122,
+                finale: 121,
+                ending: 128,
             },
             commands: {
                 startGame: 128,
                 pause: 21,
+                play: 21,
                 repeat: 16,
                 endGame: 0,
                 speedUp: 3,
@@ -293,10 +325,10 @@ async function save() {
                 help: 0,
             },
             heatmap: {
-                forestObstacle: 0,
-                forestFight: 0,
-                riddle: 0,
-                boss: 0,
+                forestObstacle: 2984,
+                forestFight: 2529,
+                riddle: 3007,
+                boss: 3245,
             },
         });
     } catch (error) {
@@ -307,7 +339,7 @@ save();
 
 // authenticated function. checks whether you are authenticated or not
 function ensureAuthenticated(req, res, next) {
-    const whitelistedPaths = ['/signup', '/forgot-password', '/reset-password'];
+    const whitelistedPaths = ['/login', '/signup', '/forgot-password', '/reset-password'];
     if (whitelistedPaths.some((path) => req.path.startsWith(path))) {
         return next(); // Skip authentication for whitelisted paths
     }
@@ -316,39 +348,16 @@ function ensureAuthenticated(req, res, next) {
         return next(); // Allow if authenticated
     }
 
+    console.log("redirecting ensure authenticated")
     res.redirect('/login'); // Redirect if not authenticated
 }
-// basic functions
-app.get("/login", async (req, res) => {
-    try {
-        console.log("logging in")
 
-        // Load the server entry point for login
-        const { render } = await vite.ssrLoadModule('src/entry-server.jsx');
-        
-        // Render the component
-        const appHtml = render();
-        
-        // Get and transform the template
-        let template = await vite.transformIndexHtml(req.originalUrl, fs.readFileSync('index.html', 'utf-8'));
-        
-        // Insert the rendered app and the client script tag
-        const html = template.replace(`<!--outlet-->`, `${render(req.originalUrl)}`);
-
-        res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
-
-    } catch (error) {
-        console.error('Error rendering Login:', error);
-        res.status(500).send('Internal Server Error');
-    }
-})
-
-// post route 
+// post route
 app.post("/login", express.json(), async (req, res) => {
     try {
         const { username, password } = req.body;
         // console.log("Received login data:", req.body); hashed for security reasons
-        
+
         const user = await User.findOne({email: username});
 
         if(!user){
@@ -358,7 +367,7 @@ app.post("/login", express.json(), async (req, res) => {
                 message: "invalid credentials"
             });
         }
-        
+
         // compare the password inserted with the ones in the database if the email is correct
         const isMatch = await user.comparePassword(password);
 
@@ -367,19 +376,19 @@ app.post("/login", express.json(), async (req, res) => {
             return res.status(401).json({
                 success: false,
                 message: "invalid credentials"
-            }); 
+            });
         }
         // Only create/get console for regular users
         if (user.UserType !== 'admin') {
             await getUserConsole(user._id, user.UserType);
         }
         console.log('console loaded');
-
         // Creates stat tracker
         await getStatTracker(user._id, user.UserType);
         console.log('Stat tracker loaded');
 
         // assigning sessions to the user while allowing them to login 
+
         req.session.user = {
             id: user._id,
             email: user.email,
@@ -396,8 +405,8 @@ app.post("/login", express.json(), async (req, res) => {
             });
         });
 
-        res.json({ 
-            success: true, 
+        res.json({
+            success: true,
             message: "Login successful",
             redirect: redirectPath
         });
@@ -556,11 +565,11 @@ app.post('/logout', ensureAuthenticated, async (req, res) => {
                 // Update console status to indicate it's closed
                 await consoleLogHistorySchema.findOneAndUpdate(
                     { UserID: userId },
-                    { 
-                        $set: { 
+                    {
+                        $set: {
                             active: false,
                             lastClosed: new Date()
-                        } 
+                        }
                     }
                 );
                 console.log(`Console closed for user ${userId}`);
@@ -585,7 +594,7 @@ app.post('/logout', ensureAuthenticated, async (req, res) => {
                 sameSite: 'strict'
             });
 
-            res.status(200).json({ 
+            res.status(200).json({
                 success: true,
                 message: 'Logout successful',
                 redirect: '/login'
@@ -604,15 +613,19 @@ app.post('/logout', ensureAuthenticated, async (req, res) => {
         });
     }
 });
+
+// Route for getting the console history
+// TODO : For some reason going to the /play route will give an error in the server, but all works as intended so
+//  that can be a low priority fix
 app.get("/get_console_history", ensureAuthenticated, async (req, res) => {
     try {
         const userId = req.session.user.id;
         const consoleHistory = await consoleLogHistorySchema.find({ UserID: userId });
-        
+
         if (!consoleHistory) {
             return res.status(404).json({ error: 'No console history found' });
         }
-        
+
         res.status(200).json(consoleHistory);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -629,11 +642,11 @@ app.post("/post_console_history",ensureAuthenticated ,async (req, res) => {
             { UserID: userId },
             { $push: { Messages: { MessageID, Message, Speaker } } }
         );
-        
+
         if (!updatedDocument) {
             return res.status(404).send('Console not found');
         }
-        
+
         res.status(200).send("Message posted successfully");
     } catch (error) {
         console.error('Error posting to console history : ', error);
@@ -662,6 +675,7 @@ app.get('/user/stats', ensureAuthenticated, async (req, res) => {
 // Post stats
 app.post("/user/stats", ensureAuthenticated, async (req, res) => {
     console.log("POST /user/stats called");
+
     try {
         const userId = req.session.user.id;
         const {
@@ -675,47 +689,78 @@ app.post("/user/stats", ensureAuthenticated, async (req, res) => {
             heatmap
         } = req.body;
 
-        const updatedDocument = await UserStatsSchema.findOneAndUpdate(
+        // Prepare the update object
+        const updateFields = {};
+
+        // Increments stat depending on context
+        if (timePlayed) updateFields.timePlayed = timePlayed;
+
+        if (pathChoices) {
+            if (pathChoices.left) updateFields["pathChoices.left"] = pathChoices.left;
+            if (pathChoices.right) updateFields["pathChoices.right"] = pathChoices.right;
+        }
+
+        if (gameCompletions) updateFields.gameCompletions = gameCompletions;
+
+        if (numberOfDeaths) updateFields.numberOfDeaths = numberOfDeaths;
+
+        if (riddleGuesses) {
+            if (riddleGuesses.correct) updateFields["riddleGuesses.correct"] = riddleGuesses.correct;
+            if (riddleGuesses.incorrect) updateFields["riddleGuesses.incorrect"] = riddleGuesses.incorrect;
+        }
+
+        if (audioFiles) {
+            if (audioFiles.inputNotification) updateFields["audioFiles.inputNotification"] = audioFiles.inputNotification;
+            if (audioFiles.hit) updateFields["audioFiles.hit"] = audioFiles.hit;
+            if (audioFiles.death) updateFields["audioFiles.death"] = audioFiles.death;
+            if (audioFiles.intro) updateFields["audioFiles.intro"] = audioFiles.intro;
+            if (audioFiles.forestIntro) updateFields["audioFiles.forestIntro"] = audioFiles.forestIntro;
+            if (audioFiles.forestFight) updateFields["audioFiles.forestFight"] = audioFiles.forestFight;
+            if (audioFiles.battleMusic) updateFields["audioFiles.battleMusic"] = audioFiles.battleMusic;
+            if (audioFiles.forestObstacle) updateFields["audioFiles.forestObstacle"] = audioFiles.forestObstacle;
+            if (audioFiles.riddleIntro) updateFields["audioFiles.riddleIntro"] = audioFiles.riddleIntro;
+            if (audioFiles.notHere) updateFields["audioFiles.notHere"] = audioFiles.notHere;
+            if (audioFiles.ahRiddle) updateFields["audioFiles.ahRiddle"] = audioFiles.ahRiddle;
+            if (audioFiles.riddle) updateFields["audioFiles.riddle"] = audioFiles.riddle;
+            if (audioFiles.openDoor) updateFields["audioFiles.openDoor"] = audioFiles.openDoor;
+            if (audioFiles.finale) updateFields["audioFiles.finale"] = audioFiles.finale;
+            if (audioFiles.ending) updateFields["audioFiles.ending"] = audioFiles.ending;
+        }
+
+        if (commands) {
+            if (commands.startGame) updateFields["commands.startGame"] = commands.startGame;
+            if (commands.pause) updateFields["commands.pause"] = commands.pause;
+            if (commands.play) updateFields["commands.play"] = commands.play;
+            if (commands.repeat) updateFields["commands.repeat"] = commands.repeat;
+            if (commands.endGame) updateFields["commands.endGame"] = commands.endGame;
+            if (commands.speedUp) updateFields["commands.speedUp"] = commands.speedUp;
+            if (commands.slowDown) updateFields["commands.slowDown"] = commands.slowDown;
+            if (commands.restart) updateFields["commands.restart"] = commands.restart;
+            if (commands.clear) updateFields["commands.clear"] = commands.clear;
+            if (commands.rewind) updateFields["commands.rewind"] = commands.rewind;
+            if (commands.help) updateFields["commands.help"] = commands.help;
+        }
+
+        if (heatmap) {
+            if (heatmap.forestObstacle) updateFields["heatmap.forestObstacle"] = heatmap.forestObstacle;
+            if (heatmap.forestFight) updateFields["heatmap.forestFight"] = heatmap.forestFight;
+            if (heatmap.riddle) updateFields["heatmap.riddle"] = heatmap.riddle;
+            if (heatmap.boss) updateFields["heatmap.boss"] = heatmap.boss;
+        }
+
+        // Updates stat field in database
+        const updatedDocument = await UserStats.findOneAndUpdate(
             { UserID: userId },
-            {
-                $inc: {
-                    timePlayed: timePlayed || 0,
-                    "pathChoices.left": pathChoices?.left || 0,
-                    "pathChoices.right": pathChoices?.right || 0,
-                    gameCompletions: gameCompletions || 0,
-                    numberOfDeaths: numberOfDeaths || 0,
-                    "riddleGuesses.correct": riddleGuesses?.correct || 0,
-                    "riddleGuesses.incorrect": riddleGuesses?.incorrect || 0,
-                    "audioFiles.hit": audioFiles?.hit || 0,
-                    "audioFiles.miss": audioFiles?.miss || 0,
-                    "audioFiles.stamina": audioFiles?.stamina || 0,
-                    "audioFiles.damaged": audioFiles?.damaged || 0,
-                    "audioFiles.eating": audioFiles?.eating || 0,
-                    "audioFiles.death": audioFiles?.death || 0,
-                    "commands.startGame": commands?.startGame || 0,
-                    "commands.pause": commands?.pause || 0,
-                    "commands.repeat": commands?.repeat || 0,
-                    "commands.endGame": commands?.endGame || 0,
-                    "commands.speedUp": commands?.speedUp || 0,
-                    "commands.slowDown": commands?.slowDown || 0,
-                    "commands.restart": commands?.restart || 0,
-                    "commands.clear": commands?.clear || 0,
-                    "commands.rewind": commands?.rewind || 0,
-                    "commands.help": commands?.help || 0,
-                    "heatmap.forestObstacle": heatmap?.forestObstacle || 0,
-                    "heatmap.forestFight": heatmap?.forestFight || 0,
-                    "heatmap.riddle": heatmap?.riddle || 0,
-                    "heatmap.boss": heatmap?.boss || 0
-                }
-            },
+            { $inc: updateFields }
         );
 
         if (!updatedDocument) {
-            return res.status(404).send("User stats error");
+            return res.status(404).send("User stats not found");
         }
 
         res.status(200).send("User stats updated successfully");
     } catch (error) {
+        console.error("Error updating user stats:", error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -735,14 +780,24 @@ app.get('/site/stats', async (req, res) => {
                     totalNumberOfDeaths: { $sum: "$numberOfDeaths" },
                     totalRiddleGuessesCorrect: { $sum: "$riddleGuesses.correct" },
                     totalRiddleGuessesIncorrect: { $sum: "$riddleGuesses.incorrect" },
+                    totalInputNotification: { $sum: "$audioFiles.inputNotification" },
                     totalHit: { $sum: "$audioFiles.hit" },
-                    totalMiss: { $sum: "$audioFiles.miss" },
-                    totalStamina: { $sum: "$audioFiles.stamina" },
-                    totalDamaged: { $sum: "$audioFiles.damaged" },
-                    totalEating: { $sum: "$audioFiles.eating" },
                     totalDeath: { $sum: "$audioFiles.death" },
+                    totalIntro: { $sum: "$audioFiles.intro" },
+                    totalForestIntro: { $sum: "$audioFiles.forestIntro" },
+                    totalForestFight: { $sum: "$audioFiles.forestFight" },
+                    totalBattleMusic: { $sum: "$audioFiles.battleMusic" },
+                    totalForestObstacle: { $sum: "$audioFiles.forestObstacle" },
+                    totalRiddleIntro: { $sum: "$audioFiles.riddleIntro" },
+                    totalNotHere: { $sum: "$audioFiles.notHere" },
+                    totalAhRiddle: { $sum: "$audioFiles.ahRiddle" },
+                    totalRiddle: { $sum: "$audioFiles.riddle" },
+                    totalOpenDoor: { $sum: "$audioFiles.openDoor" },
+                    totalFinale: { $sum: "$audioFiles.finale" },
+                    totalEnding: { $sum: "$audioFiles.ending" },
                     totalStartGame: { $sum: "$commands.startGame" },
                     totalPause: { $sum: "$commands.pause" },
+                    totalPlay: { $sum: "$commands.play" },
                     totalRepeat: { $sum: "$commands.repeat" },
                     totalEndGame: { $sum: "$commands.endGame" },
                     totalSpeedUp: { $sum: "$commands.speedUp" },
@@ -762,18 +817,28 @@ app.get('/site/stats', async (req, res) => {
                 $addFields: {
                     totalAudioPlayed: {
                         $add: [
+                            "$totalInputNotification",
                             "$totalHit",
-                            "$totalMiss",
-                            "$totalStamina",
-                            "$totalDamaged",
-                            "$totalEating",
-                            "$totalDeath"
+                            "$totalDeath",
+                            "$totalIntro",
+                            "$totalForestIntro",
+                            "$totalForestFight",
+                            "$totalBattleMusic",
+                            "$totalForestObstacle",
+                            "$totalRiddleIntro",
+                            "$totalNotHere",
+                            "$totalAhRiddle",
+                            "$totalRiddle",
+                            "$totalOpenDoor",
+                            "$totalFinale",
+                            "$totalEnding"
                         ]
                     },
                     totalCommandsUsed: {
                         $add: [
                             "$totalStartGame",
                             "$totalPause",
+                            "$totalPlay",
                             "$totalRepeat",
                             "$totalEndGame",
                             "$totalSpeedUp",
@@ -851,16 +916,16 @@ app.post("/post_clear_console", ensureAuthenticated,async (req, res) => {
     try {
         // using the user id instead
         const userId = req.session.user.id;
-        
+
         const updatedDocument = await consoleLogHistorySchema.findOneAndUpdate(
             { UserID: userId },
             { $set: { Messages: [] } }
         );
-        
+
         if (!updatedDocument) {
             return res.status(404).send('Console not found');
         }
-        
+
         res.status(200).send("Console cleared successfully");
     } catch (error) {
         console.error('Error posting to clear console history : ', error);
@@ -869,61 +934,29 @@ app.post("/post_clear_console", ensureAuthenticated,async (req, res) => {
 
 })
 
-
-// Play page route.
-app.get("/play", ensureAuthenticated,async (req, res) => {
-    console.log("GET /play called")
+// This will render all pages React code. The routing specific to the page is in the App.jsx file.
+const routes = ["/play", "/my-stats", "/login", "/user-stats", "/404", "/settings"]
+app.get(routes , ensureAuthenticated, async (req, res, next) => {
+    console.log(`Generic GET called with the url :  ${req.originalUrl}`)
     try{
-        const url = req.originalUrl;
-        const template = await vite.transformIndexHtml(url, fs.readFileSync('index.html', 'utf-8'));
-        // Render React on the server side
-        const { render } = await vite.ssrLoadModule('/src/entry-server.jsx');
-        // Put the rendered React into the index file, then React is rendered on the client side when it
-        const html = template.replace(`<!--outlet-->`, `${render(url)}`);
-        res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
+            const html = await renderReact(req.originalUrl)
+            res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
 
     } catch (error) {
-        console.error(`Error on GET /play : ${error.message}`);
+        console.error(`Error on generic React GET : ${error.message}`);
         res.status(500).send('Internal Server Error');
     }
 })
 
-// My Stats page route.
-app.get("/my-stats", ensureAuthenticated,async (req, res) => {
-    console.log("GET /my-stats called")
-    try{
-        const url = req.originalUrl;
-        const template = await vite.transformIndexHtml(url, fs.readFileSync('index.html', 'utf-8'));
-        // Render React on the server side
-        const { render } = await vite.ssrLoadModule('/src/entry-server.jsx');
-        // Put the rendered React into the index file, then React is rendered on the client side when it
-        const html = template.replace(`<!--outlet-->`, `${render(url)}`);
-        res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
-
-    } catch (error) {
-        console.error(`Error on GET /my-stats : ${error.message}`);
-        res.status(500).send('Internal Server Error');
-    }
-})
-
-// User Stats page route.
-app.get("/user-stats", ensureAuthenticated,async (req, res) => {
-    console.log("GET /user-stats called");
-    try{
-        const url = req.originalUrl;
-        const template = await vite.transformIndexHtml(url, fs.readFileSync('index.html', 'utf-8'));
-        // Render React on the server side
-        const { render } = await vite.ssrLoadModule('/src/entry-server.jsx');
-        // Put the rendered React into the index file, then React is rendered on the client side when it
-        const html = template.replace(`<!--outlet-->`, `${render(url)}`);
-        res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
-
-    } catch (error) {
-        console.error(`Error on GET /user-stats : ${error.message}`);
-        res.status(500).send('Internal Server Error');
-    }
-});
-
+async function renderReact(url) {
+    let template = await vite.transformIndexHtml(url, fs.readFileSync('index.html', 'utf-8'));
+    // Render React on the server side
+    const {render} = await vite.ssrLoadModule('/src/entry-server.jsx');
+    // Put the rendered React into the index file, then React is rendered on the client side when it
+    template = template.replace(`<!--outlet-->`, `${render(url)}`);
+    // Add the dev client side rendering script in
+    return template.replace("<!--entry-client-script-->", `<script type='module' src='./src/entry-client.jsx'></script>`)
+}
 
 app.get('/reset-password', async (req, res) => {
     try {
@@ -937,14 +970,9 @@ app.get('/reset-password', async (req, res) => {
             return res.status(400).send('Invalid request. No token provided.');
         }
 
-
-        const url = req.originalUrl;
-        const template = await vite.transformIndexHtml(url, fs.readFileSync('index.html', 'utf-8'));
-        // Render React on the server side
-        const { render } = await vite.ssrLoadModule('/src/entry-server.jsx');
-        // Put the rendered React into the index file, then React is rendered on the client side when it
-        const html = template.replace(`<!--outlet-->`, `${render(url)}`);
+        const html = await renderReact(req.originalUrl)
         res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
+
     } catch (error) {
         console.error('Error rendering /reset-password:', error);
         res.status(500).send('Internal Server Error');
@@ -952,31 +980,6 @@ app.get('/reset-password', async (req, res) => {
 });
 
 app.use(vite.middlewares);
-
-app.use('*', async (req, res, next) => {
-    const reactRoutes = ['/reset-password', '/forgot-password', '/signup'];
-    if (reactRoutes.some((path) => req.path.startsWith(path))) {
-        try {
-            // Serve React frontend
-            const template = fs.readFileSync('index.html', 'utf-8');
-            const { render } = await vite.ssrLoadModule('/src/entry-server.jsx');
-            const appHtml = render(req.originalUrl);
-
-            const html = template.replace('<!--outlet-->', appHtml);
-            return res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
-        } catch (error) {
-            console.error('Error serving React route:', error);
-            return res.status(500).send('Internal Server Error');
-        }
-    }
-
-    if (req.originalUrl.startsWith('/reset-password')) {
-        return next(); // Allow reset-password route to proceed
-    }
-
-    // Redirect other unmatched routes
-    res.redirect('/my-stats');
-});
 
 // Add this after all your routes
 app.use((err, req, res, next) => {
@@ -987,14 +990,20 @@ app.use((err, req, res, next) => {
     });
 });
 
-app.use((req, res, next) => {
-    if (!req.path.startsWith('/api')) {
-        res.sendFile(path.resolve(__dirname, 'dist', 'index.html')); // Adjust path to your React build directory
-    } else {
-        next();
-    }
-});
 
+// app.use((req, res, next) => {
+//     if (!req.path.startsWith('/api')) {
+//         res.sendFile(path.resolve(__dirname, 'dist', 'index.html')); // Adjust path to your React build directory
+//     } else {
+//         next();
+//     }
+// });
+
+// TODO : Figure out what is double calling this (likely same culprit as the get_console_history bug on /play)
+// If nothing catches the request, the user will be sent to the login screen or the 404 page.
+app.use((req, res, next) => {
+    res.redirect("/404")
+})
 app.listen(4173, () => {
     console.log('http://localhost:4173.');
 });

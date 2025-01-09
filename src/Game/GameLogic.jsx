@@ -1,11 +1,6 @@
 import {useRef, useEffect} from 'react'
 import transcripts from "../Audio/Narration/transcripts.jsx";
 
-
-// TODO STAT TRACKING : Please keep in mind the project brief encourages us to use any additional statistics
-//  that we think might be valuable to the client so think of extras and implement some of the (optional)
-//  ones I have marked that aren't directly project brief related.
-
 // TODO : Print transcripts current output when the page is exited / reloaded so we can get a better idea
 //   on where we left off
 // TODO : Get tts to cancel the queue in certain situations where we want it
@@ -32,8 +27,65 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     const soundEffectAudio = useRef(null)
     const musicAudio = useRef(null)
 
-    // TODO STAT TRACK: Add variables here.
-//     const UserStats = require('./models/UserStats');
+    // Increments the number of times an audio file is played
+    async function incrementAudioFile(audioFileName) {
+        try {
+            // Construct the object in the right format for POST request
+            const audioFiles = {
+                [audioFileName]: 1
+            };
+
+            // Make the POST request to increment the stat
+            const response = await fetch("/user/stats", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    audioFiles,
+                }),
+            });
+
+            if (!response.ok) {
+                console.error(`Failed to increment audio file stat: ${response.statusText}`);
+            }
+        } catch (error) {
+            console.error("Error:", error);
+        }
+    }
+
+    // Updates time spent in an area for heatmap
+    async function updateHeatmap(area, time) {
+        try {
+            // Construct the object in the right format for POST request
+            const heatmap = {
+                [area]: time
+            };
+
+            // Make the POST request to increment the stat
+            const response = await fetch("/user/stats", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    heatmap,
+                }),
+            });
+
+            if (!response.ok) {
+                console.error(`Failed to increment heatmap event stat: ${response.statusText}`);
+            }
+        } catch (error) {
+            console.error("Error:", error);
+        }
+    }
+
+    // Stores the time the player enters an area
+    let startTimeFight = useRef(null)
+    let startTimeObstacle = useRef(null)
+    let startTimeRiddle = useRef(null)
+    let startTimeBoss = useRef(null)
 
     // When the page first loads, create an audio player not attached to the DOM, so it isn't visible.
     useEffect(() => {
@@ -58,6 +110,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         // Make music audio player
         musicAudio.current = document.createElement("audio")
         musicAudio.current.src = "src/Audio/Game Sounds/battle-music.mp3"
+        incrementAudioFile("battleMusic")
         musicAudio.current.addEventListener("ended", handleMusicEnd)
 
 
@@ -82,8 +135,6 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     // audio... functions for handling playing of audio + some transcript code
     const audioStart = async () => {
         return new Promise((resolve) => {
-            // TODO STAT TRACK : (Optional) Could at the end of an audio add its length
-            //  + any extra time from rewinding to a "total audio time" stat
             const onAudioEnd = () => {
                 audioRef.current.removeEventListener('ended', onAudioEnd)
                 resolve()
@@ -133,6 +184,48 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         }
     }
 
+    // Increments riddle guesses
+    async function updateRiddleGuesses(correct, incorrect) {
+        try {
+            const response = await fetch("/user/stats", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    riddleGuesses: { correct, incorrect }
+                }),
+            });
+
+            if (!response.ok) {
+                console.error(`Failed to update stats: ${response.statusText}`);
+            }
+        } catch (error) {
+            console.error("Error:", error);
+        }
+    }
+
+    // Increments riddle guesses
+    async function updatePathChoice(left, right) {
+        try {
+            const response = await fetch("/user/stats", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    pathChoices: { left, right }
+                }),
+            });
+
+            if (!response.ok) {
+                console.error(`Failed to update stats: ${response.statusText}`);
+            }
+        } catch (error) {
+            console.error("Error:", error);
+        }
+    }
+
     // useEffect to get commands from the console to gameLogic
     // Uses a state variable to trigger this function, then uses a ref to change the value again
     // without re-rendering. Uses isInitialRenderConsoleToGame so it doesn't run on initial render
@@ -145,8 +238,6 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                 isInitialRenderConsoleToGame.current = false
                 return
             }
-            // TODO STAT TRACK : Don't do the tracking of commands here, do it in Console.jsx as not
-            //  all commands are passed to this component.
             // Check the incoming command
             switch (consoleToGameCommandRef.current) {
                 case "start game":
@@ -178,9 +269,6 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                     endGame(true)
                     break
                 default:
-                    // TODO STAT TRACK : waitingForUserInput will match the current choice point, any
-                    //  thing added in this switch will need to be tracked. More to be added in the next
-                    //  game feature branch.
                     // Used for in game path branching
                     // Dont run if the input is blank (from re-rendering)
                     if (consoleToGameCommandRef !== "") {
@@ -240,21 +328,24 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                                         postTextToConsole("Not a place to search on the wall. Try again", "")
                                         await new Promise(resolve => setTimeout(resolve, 4000))
                                         playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+                                        incrementAudioFile("inputNotification")
                                 }
                                 break
                             case "Riddle":
                                 switch (consoleToGameCommandRef.current) {
                                     case "door":
                                     case "a door":
+                                        updateRiddleGuesses(1, 0) // +1 correct guess
                                         riddleDoorOpen()
                                         break
                                     default:
+                                        updateRiddleGuesses(0, 1) // +1 incorrect guess
                                         postTextToConsole("That is not the answer. Guess again", "")
                                         await new Promise(resolve => setTimeout(resolve, 3000))
                                         playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+                                        incrementAudioFile("inputNotification")
                                 }
                                 break
-                            // TODO STAT TRACK : amount of times musashi fell / picked correctly etc
                             case "forestObstacle":
                                 if (consoleToGameCommandRef.current === "hint") {
                                     forestRight()
@@ -263,6 +354,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                                     forestObstacleProgress.current++
                                     await new Promise(resolve => setTimeout(resolve, 2000))
                                     playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+                                    incrementAudioFile("inputNotification")
                                     if (forestObstacleProgress.current === 6) {
                                         postTextToConsole("You made it past the traps!", "")
                                         riddleStart()
@@ -273,14 +365,22 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                                         postTextToConsole(`The trap pushes Musashi but he manages to stabilize himself. He can only do this ${obstacleStamina.current} more times before he falls!`, "")
                                         await new Promise(resolve => setTimeout(resolve, 8000))
                                         playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+                                        incrementAudioFile("inputNotification")
                                     } else {
+                                        updateStat(0, 0, 1) // +1 death
                                         postTextToConsole("Musashi was knocked into the ocean! Game Over.", "")
+
+                                        // Heatmap timers
+//                                         const elapsedTimeObstacle = Math.floor((new Date() - startTimeObstacle.current) / 1000)
+//                                         updateHeatmap("forestObstacle", elapsedTimeObstacle)
+
                                         endGame(true)
                                     }
                                 } else {
                                     postTextToConsole(`Not a valid option. Please say "jump" or "crouch"`, "")
                                     await new Promise(resolve => setTimeout(resolve, 4000))
                                     playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+                                    incrementAudioFile("inputNotification")
                                 }
                             default:
                                 console.log("GameLogic:Not a command match")
@@ -304,11 +404,32 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         }
     }
 
+    // Posts time played in seconds, number of game completions and deaths to server
+    async function updateStat(gameSeconds, completions, deaths){
+        try {
+            const response = await fetch("/user/stats", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    timePlayed: gameSeconds,
+                    gameCompletions: completions,
+                    numberOfDeaths: deaths,
+                }),
+            });
 
-    // TODO STAT TRACK : Stop the in game time tracking here
-    //  Please note you might need to use useEffect or something of the
-    //  sort that will track when the page is left / closed / reloaded
-    //  by the user to stop the timer as well
+            if (!response.ok) {
+                console.error(`Failed to update stats: ${response.statusText}`);
+            }
+        } catch (error) {
+            console.error("Error:", error);
+        }
+    }
+
+    // Stores the time the game starts
+    let startTime = useRef(null)
+
     // Resets all possible variables it can and stops/restarts the game
     async function endGame(restart){
         if (cancelGame) cancelGame("Ended Game")
@@ -317,6 +438,16 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         gameStarted.current = false
         forestObstacleProgress.current = 0
         obstacleStamina.current = 5
+
+        // Calculates how long the game lasted in seconds
+        const elapsedTime = Math.floor((new Date() - startTime.current) / 1000)
+        updateStat(elapsedTime, 0, 0)
+
+//         updateHeatmap("forestFight", elapsedTimeFight)
+//         updateHeatmap("forestObstacle", elapsedTimeObstacle)
+//         updateHeatmap("riddle", elapsedTimeFight)
+//         updateHeatmap("boss", elapsedTimeObstacle)
+
         // Just to make sure the transcript is printed before this.
         await new Promise(resolve => setTimeout(resolve, 300))
         delayedPosition.current = 0
@@ -329,6 +460,22 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         }
     }
 
+    // Calculates time played in seconds when the page is closed.
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            if (gameStarted.current) {
+                const elapsedTime = Math.floor((new Date() - startTime.current) / 1000)
+                updateStat(elapsedTime, 0, 0)
+            }
+        }
+        window.addEventListener('beforeunload', handleBeforeUnload)
+
+        // Cleanup function to remove event listeners when the component is unmounted or game is stopped
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload)
+        }
+    }, [])
+
     async function tutorialQuestion(){
         // Prevents this from running multiple times
         if (gameStarted.current === true){
@@ -339,6 +486,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         postTextToConsole("Would you like to go to the tutorial? Say yes or no", "")
         await new Promise(resolve => setTimeout(resolve, 7000))
         playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+        incrementAudioFile("inputNotification")
         waitingForUserInput.current = "TutorialQuestion"
 
     }
@@ -352,6 +500,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             // Just to make sure the tts is done first
             await new Promise(resolve => setTimeout(resolve, 12000))
             playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+            incrementAudioFile("inputNotification")
             await new Promise(resolve => setTimeout(resolve, 1000))
 
             postTextToConsole("This game has many different commands to control the experience. These include but are not" +
@@ -373,32 +522,36 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             postTextToConsole("Would you like to hear the tutorial again? Say yes or no", "")
             await new Promise(resolve => setTimeout(resolve, 68000))
             playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+            incrementAudioFile("inputNotification")
             waitingForUserInput.current = "TutorialQuestion"
 
             resolve()
         })
     }
 
-    // TODO STAT TRACK : Add in-game tracking time here.
     let gameStarted = useRef(false)
     // Cancel holds the reject function of the promise. This allows us to cancel the function
     // from anywhere else in the code.
     let cancelGame
 
     async function startGame() {
+
+        // Tracks start time
+        startTime.current = new Date()
+
         // Promise used to cancel the game at any point
         await new Promise(async (resolve, reject) => {
             cancelGame = reject;
             // Intro
-            // TODO STAT TRACK : Number of audio files played here and other similar code blocks
-            // TODO make these 3 lines a function since it doesn't need to be repeated
             audioRef.current.src = "./src/Audio/Narration/Intro.mp3"
+            incrementAudioFile("intro")
             transcriptOutput("Intro")
             audioStart()
             // Block until transcript and audio are done
             await new Promise(async resolve => {storyBlock=resolve})
             // Forest
             audioRef.current.src = "./src/Audio/Narration/forestIntro.mp3"
+            incrementAudioFile("forestIntro")
             transcriptOutput("forestIntro")
             audioStart()
             // Block until transcript and audio are done
@@ -410,6 +563,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             postTextToConsole("Choose your path. Do you want to go left or right?", "")
             await new Promise(resolve => setTimeout(resolve, 4000))
             playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+            incrementAudioFile("inputNotification")
             resolve()
         })
     }
@@ -431,10 +585,21 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     }
 
     async function riddleStart(){
+
+        startTimeRiddle.current = new Date() // captures time riddle section begins
+
+        // Ends forest section timers
+//         const elapsedTimeFight = Math.floor((new Date() - startTimeFight.current) / 1000)
+//         updateHeatmap("forestFight", elapsedTimeFight)
+//         const elapsedTimeObstacle = Math.floor((new Date() - startTimeObstacle.current) / 1000)
+//         updateHeatmap("forestObstacle", elapsedTimeObstacle)
+
         await new Promise(async (resolve, reject) => {
+
             cancelGame = reject;
 
             audioRef.current.src = "./src/Audio/Narration/riddleIntro.mp3"
+            incrementAudioFile("riddleIntro")
             transcriptOutput("riddleIntro")
             audioStart()
             // Block until transcript and audio are done
@@ -444,6 +609,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             waitingForUserInput.current = "riddleStart"
             await new Promise(resolve => setTimeout(resolve, 4000))
             playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+            incrementAudioFile("inputNotification")
             resolve()
         })
     }
@@ -455,11 +621,13 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
             waitingForUserInput.current = ""
             audioRef.current.src = "./src/Audio/Narration/notHere.mp3"
+            incrementAudioFile("notHere")
             transcriptOutput("notHere")
             audioStart()
             // Block until transcript and audio are done
             await new Promise(async resolve => {storyBlock=resolve})
             playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+            incrementAudioFile("inputNotification")
             waitingForUserInput.current = "riddleStart"
 
             resolve()
@@ -468,21 +636,25 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     // When the player finds the riddle
     async function riddleFound(){
         await new Promise(async (resolve, reject) => {
+
             cancelGame = reject;
 
             waitingForUserInput.current = ""
             audioRef.current.src = "./src/Audio/Narration/ahRiddle.mp3"
+            incrementAudioFile("ahRiddle")
             transcriptOutput("ahRiddle")
             audioStart()
             // Block until transcript and audio are done
             await new Promise(async resolve => {storyBlock=resolve})
 
             audioRef.current.src = "./src/Audio/Narration/riddle.mp3"
+            incrementAudioFile("riddle")
             transcriptOutput("riddle")
             audioStart()
             // Block until transcript and audio are done
             await new Promise(async resolve => {storyBlock=resolve})
             playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+            incrementAudioFile("inputNotification")
 
             waitingForUserInput.current = "Riddle"
 
@@ -497,6 +669,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
             waitingForUserInput.current = ""
             audioRef.current.src = "./src/Audio/Narration/openDoor.mp3"
+            incrementAudioFile("openDoor")
             transcriptOutput("openDoor")
             audioStart()
             // Block until transcript and audio are done
@@ -510,10 +683,19 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
     // Start final fight
     async function finale(){
+
+        // Ends riddle section timer
+//         const elapsedTimeRiddle = Math.floor((new Date() - startTimeRiddle.current) / 1000)
+//         updateHeatmap("riddle", elapsedTimeRiddle)
+
+        startTimeBoss.current = new Date() // Captures time boss section starts
+
         await new Promise(async (resolve, reject) => {
+
             cancelGame = reject;
 
             audioRef.current.src = "./src/Audio/Narration/finale.mp3"
+            incrementAudioFile("finale")
             transcriptOutput("finale")
             audioStart()
             // Block until transcript and audio are done
@@ -527,11 +709,20 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
     // After final fight
     async function ending(){
+
+         updateStat(0 , 1, 0) // +1 game completion
+
+        // Ends boss section timer
+//         const elapsedTimeBoss = Math.floor((new Date() - startTimeBoss.current) / 1000)
+//         updateHeatmap("boss", elapsedTimeBoss)
+
         await new Promise(async (resolve, reject) => {
+
             cancelGame = reject;
 
             await new Promise(resolve => setTimeout(resolve, 4000))
             audioRef.current.src = "./src/Audio/Narration/ending.mp3"
+            incrementAudioFile("ending")
             transcriptOutput("ending")
             audioStart()
             // Block until transcript and audio are done
@@ -542,15 +733,18 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         })
     }
 
-    // TODO STAT TRACK : Alternative place(s) to put the heatmap data instead of the switch, I
-    //  would personally recommend the switch to keep code cleaner and keep heatmap tracking code bundled
     // Picked left on forest branching choice (fight)
     async function forestLeft(){
+
+        updatePathChoice(1, 0) // +1 left
+        startTimeFight.current = new Date()
+
         postTextToConsole("You picked 'left'", "")
         await new Promise(async (resolve, reject) => {
             cancelGame = reject
 
             audioRef.current.src = "./src/Audio/Narration/forestFight.mp3"
+            incrementAudioFile("forestFight")
             transcriptOutput("forestFight")
             audioStart()
             // Block until transcript and audio are done
@@ -568,11 +762,16 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     let obstacleStamina = useRef(5)
     // Cliff obstacle
     async function forestRight(){
+
+        updatePathChoice(0, 1) // +1 right
+        startTimeObstacle.current = new Date()
+
         postTextToConsole("You picked 'right'", "")
         await new Promise(async (resolve, reject) => {
             cancelGame = reject
 
             audioRef.current.src = "./src/Audio/Narration/forestObstacle.mp3"
+            incrementAudioFile("forestObstacle")
             transcriptOutput("forestObstacle")
             audioStart()
             // Block until transcript and audio are done
@@ -582,6 +781,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             postTextToConsole(`Say crouch, or jump in line with Musashis guess. Say "hint" in order to hear the dialogue again`, "")
             await new Promise(resolve => setTimeout(resolve, 7000))
             playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+            incrementAudioFile("inputNotification")
 
             resolve()
         })
@@ -627,10 +827,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
     let firstTurn = useRef(true)
 
-    // TODO STAT TRACK : number of combat moves (func called each move)
     async function combatMove(movePicked) {
 
-        // TODO STAT TRACK : enemy moves picked (func outputs string, same as player moves)
         // Run enemy move AI
         const enemyMovePicked = enemyMoveAI()
         // Stun logic already handled. Resetting it here so the AI can take advantage of you being stunned
@@ -641,10 +839,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
         // Enemy parry logic
         // Enemy parried slash
-        // TODO STAT TRACK : enemy parried slash (not stun)
         if (movePicked === "slash" && enemyMovePicked === "parry slash") {
             // If the player swapped from charging stab and go parried, stun them
-            // TODO STAT TRACK : enemy parried slash (stun)
             if (playerChargingStab.current) {
                 stunned.current = 1
                 postTextToConsole(cTextEnemyParrySuccess, "")
@@ -659,7 +855,6 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                 return
             }
             // Enemy parried stab
-            // TODO STAT TRACK : enemy parried stab
         } else if (movePicked === "stab" && enemyMovePicked === "parry stab" && playerChargingStab.current) {
             stunned.current = 1
             playerChargingStab.current = false
@@ -673,10 +868,8 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
         // Player parry logic
         // Player parried slash
-        // TODO STAT TRACK : player parried slash (not stun)
         if (movePicked === "parry slash" && enemyMovePicked === "slash") {
             // If the player swapped from charging stab and go parried, stun them
-            // TODO STAT TRACK : player parried slash (stun)
             if (enemyChargingStab.current) {
                 stunned.current = 2
                 postTextToConsole(cTextPlayerParrySuccess, "")
@@ -687,7 +880,6 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                 return
             }
             // Player parried stab
-            // TODO STAT TRACK : player parried stab
         } else if (movePicked === "parry stab" && enemyMovePicked === "stab" && enemyChargingStab.current === true) {
             stunned.current = 2
             enemyChargingStab.current = false
@@ -695,27 +887,24 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             postTextToConsole(cTextEnemyStunned, "")
             return
         }
-        // TODO STAT TRACK : player stab cancel
         // If they didn't pick stab a second time, wipe their stab status
         if (movePicked !== "stab") {
             playerChargingStab.current = false
         }
-        // TODO STAT TRACK : enemy stab cancel
         if (enemyMovePicked !== "stab") {
             enemyChargingStab.current = false
         }
 
         let damage = 0
         // Handle player move
-        // TODO STAT TRACK : player move slash count
         if (movePicked === "slash") {
             damage = 30;
             playerChargingStab.current = false;
             playSoundEffect("src/Audio/Game Sounds/sword-clash.mp3")
+            incrementAudioFile("inputNotification")
         } else if (movePicked === "stab" && playerChargingStab.current === true) {
             damage = 70;
             playerChargingStab.current = false
-            // TODO STAT TRACK : player move stab count
         } else if (movePicked === "stab") {
             postTextToConsole(cTextPlayerStabCharge, "");
             playerChargingStab.current = true
@@ -726,7 +915,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         if (!playerChargingStab.current && movePicked !== "") {
             postTextToConsole(`You picked ${movePicked}${damageMessage}!`, "")
         }
-        // TODO STAT TRACK : total dmg done by player
+
         enemyHealth.current -= damage
 
         // If the enemy has been killed
@@ -743,19 +932,18 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             musicAudio.current.currentTime = 0
             musicAudio.current.pause()
             playSoundEffect("src/Audio/Game Sounds/male-death-sound.mp3")
+            incrementAudioFile("inputNotification")
             return
         }
 
         // Handle enemy move
         damage = 0
-        // TODO STAT TRACK : enemy move slash count
         if (enemyMovePicked === "slash") {
             damage = 30;
             enemyChargingStab.current = false
         } else if (enemyMovePicked === "stab" && enemyChargingStab.current === true) {
             damage = 70;
             enemyChargingStab.current = false
-            // TODO STAT TRACK : enemy move stab count
         } else if (enemyMovePicked === "stab") {
             postTextToConsole(cTextEnemyStabCharge, "");
             enemyChargingStab.current = true
@@ -766,22 +954,24 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         if (!enemyChargingStab.current && stunned.current !== 2) {
             postTextToConsole(`The enemy picked ${enemyMovePicked}${damageMessage}!`, "")
         }
-        // TODO STAT TRACK : total damage done by enemy
+
         playerHealth.current -= damage
 
-        // TODO STAT TRACK : player combat death count
         // If the player has been killed
         if (playerHealth.current <= 0) {
+            updateStat(0, 0, 1) // +1 death
             playSoundEffect("src/Audio/Game Sounds/male-death-sound.mp3")
+            incrementAudioFile("inputNotification")
             postTextToConsole("You have been killed and lost the fight. Game over.", "")
             waitingForUserInput.current = ""
             await new Promise(resolve => setTimeout(resolve, 15000))
             endGame(true)
             musicAudio.current.currentTime = 0
             musicAudio.current.pause()
+
             return
         }
-        // TODO STAT TRACK : total times stunning the enemy
+
         if (stunned.current === 2) {
             postTextToConsole("The enemy was stunned and so their move was skipped!", "");
             stunned.current = 0
@@ -791,7 +981,6 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         postTextToConsole(`You have ${playerHealth.current} health remaining and the enemy has ${enemyHealth.current} remaining!`, "")
     }
 
-    // TODO STAT TRACK : could do enemy AI choices total (at each if statement)
     function enemyMoveAI(){
         // If it's the first move, pick randomly (except parry stab since it won't be turn 1 charged)
         if(firstTurn.current){
@@ -801,7 +990,6 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         }
         // If the enemy is stunned, don't return a move
         if (stunned.current === 2){
-            // TODO STAT TRACK : alternate place to put enemy stunned count
             console.log("ENEMY AI : enemy stunned")
             return ""
         }

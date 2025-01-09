@@ -26,16 +26,26 @@ const UserStatsSchema = new mongoose.Schema({
     incorrect: { type: Number, default: 0 }
   },
   audioFiles: {
+    inputNotification: { type: Number, default: 0 },
     hit: { type: Number, default: 0 },
-    miss: { type: Number, default: 0 },
-    stamina: { type: Number, default: 0 },
-    damaged: { type: Number, default: 0 },
-    eating: { type: Number, default: 0 },
-    death: { type: Number, default: 0 }
+    death: { type: Number, default: 0 },
+    intro: { type: Number, default: 0 },
+    forestIntro: { type: Number, default: 0 },
+    forestFight: { type: Number, default: 0 },
+    battleMusic: { type: Number, default: 0 },
+    forestObstacle: { type: Number, default: 0 },
+    riddleIntro: { type: Number, default: 0 },
+    notHere: { type: Number, default: 0 },
+    ahRiddle: { type: Number, default: 0 },
+    riddle: { type: Number, default: 0 },
+    openDoor: { type: Number, default: 0 },
+    finale: { type: Number, default: 0 },
+    ending: { type: Number, default: 0 }
   },
   commands: {
     startGame: { type: Number, default: 0 },
     pause: { type: Number, default: 0 },
+    play: { type: Number, default: 0 },
     repeat: { type: Number, default: 0 },
     endGame: { type: Number, default: 0 },
     speedUp: { type: Number, default: 0 },
