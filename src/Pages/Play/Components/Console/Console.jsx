@@ -1,7 +1,9 @@
 import {useState, useRef, useEffect, forwardRef, useImperativeHandle} from 'react'
 import './ConsoleStyling.css';
 import {speakText} from "@/utility/Speech.jsx";
-import SpeechToText from '../../../../utility/SpeechToText';
+import SpeechToText from '@/utility/SpeechToText';
+import { analyzeSentiment, correctInput, cleanseText } from '../../../../utility/Sentiment';
+
 // NOTE : No game logic should be in this module.
 // Accessibility logic is fine (e.g rewind to last dialogue)
 // DESIGN NOTE : We fetch the entire console history every time we reload because this is a small game with few
@@ -113,7 +115,7 @@ export const Console =
 
 
     // Function to add a user console input client side
-    function new_console_input() {
+    function new_console_input(inputText) {
 
         // (Re)focus the input box
         if (inputRef.current) {
@@ -121,7 +123,7 @@ export const Console =
         }
 
         const console_input_box = document.getElementById("console_input_box")
-        const console_input_text = console_input_box.value
+        const console_input_text = inputText || console_input_box.value
         console_input_box.value = ""
 
         switch (console_input_text) {
@@ -274,6 +276,15 @@ export const Console =
         }
     }
 
+    // Function to handle speech to text
+    const handleSpeechToText = async (speechResult) => {
+        speechResult = cleanseText(speechResult);
+        analyzeSentiment(speechResult);
+        const correctedCommand = await correctInput(speechResult);
+        new_console_input(correctedCommand);
+    };
+
+    
     return (
         <>
             <div className="d-flex justify-content-center gap-3 py-5 bg-dark">
@@ -297,6 +308,7 @@ export const Console =
                     </div>
                 </div>
             </div>
+            <SpeechToText onTextReady={handleSpeechToText} />
         </>
     )
 
