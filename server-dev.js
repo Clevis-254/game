@@ -131,7 +131,6 @@ async function getUserConsole(userId, userType) {
         throw error;
     }
 }
-// user samples
 
 async function getStatTracker(userId, userType) {
     try {
@@ -614,9 +613,6 @@ app.post('/logout', ensureAuthenticated, async (req, res) => {
     }
 });
 
-// Route for getting the console history
-// TODO : For some reason going to the /play route will give an error in the server, but all works as intended so
-//  that can be a low priority fix
 app.get("/get_console_history", ensureAuthenticated, async (req, res) => {
     try {
         const userId = req.session.user.id;
@@ -631,6 +627,7 @@ app.get("/get_console_history", ensureAuthenticated, async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
 // Route for posting a new console message to the database
 app.post("/post_console_history",ensureAuthenticated ,async (req, res) => {
     console.log ("POST /post_console_history called")
@@ -999,7 +996,6 @@ app.use((err, req, res, next) => {
 //     }
 // });
 
-// TODO : Figure out what is double calling this (likely same culprit as the get_console_history bug on /play)
 // If nothing catches the request, the user will be sent to the login screen or the 404 page.
 app.use((req, res, next) => {
     res.redirect("/404")

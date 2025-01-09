@@ -12,6 +12,8 @@ import User from './models/UserSchema.js';
 import error from "express/lib/view.js";
 import path from "path";
 import {redirect} from "react-router-dom";
+import UserStats from "./models/UserStats.js";
+import { createServer } from 'vite';
 
 
 //importing express into the server
@@ -27,6 +29,12 @@ app.use(
 //  middleware configurations
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+const vite = await createServer({
+    server: {
+        middlewareMode: true,
+    },
+    appType: 'custom',
+});
 
 // creating authentication session
 // Update your session configuration
@@ -88,9 +96,81 @@ async function getUserConsole(userId, userType) {
         throw error;
     }
 }
-// user samples
+
+async function getStatTracker(userId, userType) {
+    try {
+        console.log(`Attempting to find stat tracker for user ID: ${userId}`);
+        let statTracker = await UserStats.findOne({ UserID: userId });
+
+        if (!statTracker) {
+            console.log(`No existing stat tracker, creating new one...`);
+            statTracker = await UserStats.create({
+                UserID: userId,
+                timePlayed: 0,
+                riddleGuesses: {
+                    left: 0,
+                    right: 0,
+                },
+                gameCompletions: 0,
+                numberOfDeaths: 0,
+                riddleGuesses: {
+                    correct: 0,
+                    incorrect: 0,
+                },
+                audioFiles: {
+                    inputNotification: 0,
+                    hit: 0,
+                    death: 0,
+                    intro: 0,
+                    forestIntro: 0,
+                    forestFight: 0,
+                    battleMusic: 0,
+                    forestObstacle: 0,
+                    riddleIntro: 0,
+                    notHere: 0,
+                    ahRiddle: 0,
+                    riddle: 0,
+                    openDoor: 0,
+                    finale: 0,
+                    ending: 0,
+                },
+                commands: {
+                    startGame: 0,
+                    pause: 0,
+                    play: 0,
+                    repeat: 0,
+                    endGame: 0,
+                    speedUp: 0,
+                    slowDown: 0,
+                    restart: 0,
+                    clear: 0,
+                    rewind: 0,
+                    help: 0,
+                },
+                heatmap: {
+                    forestFight: 0,
+                    forestObstacle: 0,
+                    riddle: 0,
+                    boss: 0,
+                },
+            });
+            console.log(`New stat tracker created with ID: ${statTracker._id}`);
+
+            return statTracker;
+        }
+        console.log(`No stats for "${userType}" necessary.`);
+        return null;
+    } catch (error) {
+        console.error(`Error managing user stats: ${error.message}`);
+        throw error;
+    }
+}
+
 async function save() {
     try {
+        await User.deleteMany({});
+        await UserStats.deleteMany({});
+
         const user = await User.create({
             Name: "Gikenyi",
             email: "s@email.com",
@@ -101,6 +181,116 @@ async function save() {
             email: "admin@email.com",
             Password: "admin1234",
             UserType: "admin"
+        });
+        const smelvin = await User.create({
+            Name: "Smelvin Potter",
+            email: "spotter@email.com",
+            Password: "approaching"
+        });
+
+
+        // Example stats for Gikenyi.
+        const gikenyiStatTracker = await UserStats.create({
+            UserID: user._id,
+            timePlayed: 500,
+            pathChoices: {
+                left: 2,
+                right: 1,
+            },
+            gameCompletions: 2,
+            numberOfDeaths: 1,
+            riddleGuesses: {
+                correct: 2,
+                incorrect: 6,
+            },
+            audioFiles: {
+                inputNotification: 45,
+                hit: 34,
+                death: 34,
+                intro: 25,
+                forestIntro: 25,
+                forestFight: 23,
+                battleMusic: 23,
+                forestObstacle: 23,
+                riddleIntro: 34,
+                notHere: 23,
+                ahRiddle: 23,
+                riddle: 25,
+                openDoor: 22,
+                finale: 21,
+                ending: 10,
+            },
+            commands: {
+                startGame: 3,
+                pause: 1,
+                play: 1,
+                repeat: 6,
+                endGame: 1,
+                speedUp: 2,
+                slowDown: 1,
+                restart: 1,
+                clear: 3,
+                rewind: 2,
+                help: 3,
+            },
+            heatmap: {
+                forestFight: 50,
+                forestObstacle: 100,
+                riddle: 200,
+                boss: 150,
+            },
+        });
+
+        // Example stats for Smelvin.
+        const smelvinStatTracker = await UserStats.create({
+            UserID: smelvin._id,
+            timePlayed: 11766,
+            pathChoices: {
+                left: 47,
+                right: 81,
+            },
+            gameCompletions: 128,
+            numberOfDeaths: 0,
+            riddleGuesses: {
+                correct: 128,
+                incorrect: 0,
+            },
+            audioFiles: {
+                inputNotification: 425,
+                hit: 134,
+                death: 134,
+                intro: 125,
+                forestIntro: 125,
+                forestFight: 123,
+                battleMusic: 123,
+                forestObstacle: 123,
+                riddleIntro: 134,
+                notHere: 123,
+                ahRiddle: 123,
+                riddle: 125,
+                openDoor: 122,
+                finale: 121,
+                ending: 128,
+            },
+            commands: {
+                startGame: 128,
+                pause: 21,
+                play: 21,
+                repeat: 16,
+                endGame: 0,
+                speedUp: 3,
+                slowDown: 2,
+                restart: 7,
+                clear: 11,
+                rewind: 5,
+                help: 0,
+            },
+            heatmap: {
+                forestFight: 2529,
+                forestObstacle: 2984,
+                riddle: 3007,
+                boss: 3245,
+            },
         });
     } catch (error) {
         console.error("Error creating user:", error);
@@ -155,6 +345,10 @@ app.post("/login", express.json(), async (req, res) => {
         }
         console.log('console loaded');
 
+        // Creates stat tracker
+        await getStatTracker(user._id, user.UserType);
+        console.log('Stat tracker loaded');
+
         // assigning sessions to the user while allowing them to login
         req.session.user = {
             id: user._id,
@@ -162,7 +356,7 @@ app.post("/login", express.json(), async (req, res) => {
             userType: user.UserType
         };
 
-        const redirectPath = user.UserType === 'admin' ? '/dashboard' : '/play';
+        const redirectPath = user.UserType === 'admin' ? '/user-stats' : '/play';
 
         // Make sure to await the session save
         await new Promise((resolve, reject) => {
@@ -200,6 +394,10 @@ app.post('/signup', async (req, res) => {
         // Create console for new user
         await getUserConsole(user._id, user.UserType);
         console.log('console created');
+
+        // Creates stat tracker for new user
+        await getStatTracker(user._id, user.UserType);
+        console.log('Stat tracker created');
 
         // Set up session for new user
         req.session.user = {
@@ -377,9 +575,6 @@ app.post('/logout', ensureAuthenticated, async (req, res) => {
     }
 });
 
-// Route for getting the console history
-// TODO : For some reason going to the /play route will give an error in the server, but all works as intended so
-//  that can be a low priority fix
 app.get("/get_console_history", ensureAuthenticated, async (req, res) => {
     try {
         const userId = req.session.user.id;
@@ -394,6 +589,7 @@ app.get("/get_console_history", ensureAuthenticated, async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
 // Route for posting a new console message to the database
 app.post("/post_console_history",ensureAuthenticated ,async (req, res) => {
     console.log ("POST /post_console_history called")
@@ -417,6 +613,261 @@ app.post("/post_console_history",ensureAuthenticated ,async (req, res) => {
     }
 })
 
+// Get stats
+app.get('/user/stats', ensureAuthenticated, async (req, res) => {
+    try {
+        const userId = req.session.user.id;
+        const stats = await UserStats.findOne({ UserID: userId });
+
+        if (!stats) {
+            return res.status(404).send('Stat tracker not found');
+        }
+
+        res.status(200).json({stats});
+
+    } catch (error) {
+        console.error('Error getting to stat tracker : ', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+// Post stats
+app.post("/user/stats", ensureAuthenticated, async (req, res) => {
+    console.log("POST /user/stats called");
+
+    try {
+        const userId = req.session.user.id;
+        const {
+            timePlayed,
+            pathChoices,
+            gameCompletions,
+            numberOfDeaths,
+            riddleGuesses,
+            audioFiles,
+            commands,
+            heatmap
+        } = req.body;
+
+        // Prepare the update object
+        const updateFields = {};
+
+        // Increments stat depending on context
+        if (timePlayed) updateFields.timePlayed = timePlayed;
+
+        if (pathChoices) {
+            if (pathChoices.left) updateFields["pathChoices.left"] = pathChoices.left;
+            if (pathChoices.right) updateFields["pathChoices.right"] = pathChoices.right;
+        }
+
+        if (gameCompletions) updateFields.gameCompletions = gameCompletions;
+
+        if (numberOfDeaths) updateFields.numberOfDeaths = numberOfDeaths;
+
+        if (riddleGuesses) {
+            if (riddleGuesses.correct) updateFields["riddleGuesses.correct"] = riddleGuesses.correct;
+            if (riddleGuesses.incorrect) updateFields["riddleGuesses.incorrect"] = riddleGuesses.incorrect;
+        }
+
+        if (audioFiles) {
+            if (audioFiles.inputNotification) updateFields["audioFiles.inputNotification"] = audioFiles.inputNotification;
+            if (audioFiles.hit) updateFields["audioFiles.hit"] = audioFiles.hit;
+            if (audioFiles.death) updateFields["audioFiles.death"] = audioFiles.death;
+            if (audioFiles.intro) updateFields["audioFiles.intro"] = audioFiles.intro;
+            if (audioFiles.forestIntro) updateFields["audioFiles.forestIntro"] = audioFiles.forestIntro;
+            if (audioFiles.forestFight) updateFields["audioFiles.forestFight"] = audioFiles.forestFight;
+            if (audioFiles.battleMusic) updateFields["audioFiles.battleMusic"] = audioFiles.battleMusic;
+            if (audioFiles.forestObstacle) updateFields["audioFiles.forestObstacle"] = audioFiles.forestObstacle;
+            if (audioFiles.riddleIntro) updateFields["audioFiles.riddleIntro"] = audioFiles.riddleIntro;
+            if (audioFiles.notHere) updateFields["audioFiles.notHere"] = audioFiles.notHere;
+            if (audioFiles.ahRiddle) updateFields["audioFiles.ahRiddle"] = audioFiles.ahRiddle;
+            if (audioFiles.riddle) updateFields["audioFiles.riddle"] = audioFiles.riddle;
+            if (audioFiles.openDoor) updateFields["audioFiles.openDoor"] = audioFiles.openDoor;
+            if (audioFiles.finale) updateFields["audioFiles.finale"] = audioFiles.finale;
+            if (audioFiles.ending) updateFields["audioFiles.ending"] = audioFiles.ending;
+        }
+
+        if (commands) {
+            if (commands.startGame) updateFields["commands.startGame"] = commands.startGame;
+            if (commands.pause) updateFields["commands.pause"] = commands.pause;
+            if (commands.play) updateFields["commands.play"] = commands.play;
+            if (commands.repeat) updateFields["commands.repeat"] = commands.repeat;
+            if (commands.endGame) updateFields["commands.endGame"] = commands.endGame;
+            if (commands.speedUp) updateFields["commands.speedUp"] = commands.speedUp;
+            if (commands.slowDown) updateFields["commands.slowDown"] = commands.slowDown;
+            if (commands.restart) updateFields["commands.restart"] = commands.restart;
+            if (commands.clear) updateFields["commands.clear"] = commands.clear;
+            if (commands.rewind) updateFields["commands.rewind"] = commands.rewind;
+            if (commands.help) updateFields["commands.help"] = commands.help;
+        }
+
+        if (heatmap) {
+            if (heatmap.forestFight) updateFields["heatmap.forestFight"] = heatmap.forestFight;
+            if (heatmap.forestObstacle) updateFields["heatmap.forestObstacle"] = heatmap.forestObstacle;
+            if (heatmap.riddle) updateFields["heatmap.riddle"] = heatmap.riddle;
+            if (heatmap.boss) updateFields["heatmap.boss"] = heatmap.boss;
+        }
+
+        // Updates stat field in database
+        const updatedDocument = await UserStats.findOneAndUpdate(
+            { UserID: userId },
+            { $inc: updateFields }
+        );
+
+        if (!updatedDocument) {
+            return res.status(404).send("User stats not found");
+        }
+
+        res.status(200).send("User stats updated successfully");
+    } catch (error) {
+        console.error("Error updating user stats:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get site-wide stats
+app.get('/site/stats', async (req, res) => {
+    try {
+    // Combines all the fields into the collected site-wide stats
+    const stats = await UserStats.aggregate([
+        {
+            $group: {
+                _id: null, // Groups all users together
+                totalTimePlayed: { $sum: "$timePlayed" },
+                totalPathChoicesLeft: { $sum: "$pathChoices.left" },
+                totalPathChoicesRight: { $sum: "$pathChoices.right" },
+                totalGameCompletions: { $sum: "$gameCompletions" },
+                totalNumberOfDeaths: { $sum: "$numberOfDeaths" },
+                totalRiddleGuessesCorrect: { $sum: "$riddleGuesses.correct" },
+                totalRiddleGuessesIncorrect: { $sum: "$riddleGuesses.incorrect" },
+                totalInputNotification: { $sum: "$audioFiles.inputNotification" },
+                totalHit: { $sum: "$audioFiles.hit" },
+                totalDeath: { $sum: "$audioFiles.death" },
+                totalIntro: { $sum: "$audioFiles.intro" },
+                totalForestIntro: { $sum: "$audioFiles.forestIntro" },
+                totalForestFight: { $sum: "$audioFiles.forestFight" },
+                totalBattleMusic: { $sum: "$audioFiles.battleMusic" },
+                totalForestObstacle: { $sum: "$audioFiles.forestObstacle" },
+                totalRiddleIntro: { $sum: "$audioFiles.riddleIntro" },
+                totalNotHere: { $sum: "$audioFiles.notHere" },
+                totalAhRiddle: { $sum: "$audioFiles.ahRiddle" },
+                totalRiddle: { $sum: "$audioFiles.riddle" },
+                totalOpenDoor: { $sum: "$audioFiles.openDoor" },
+                totalFinale: { $sum: "$audioFiles.finale" },
+                totalEnding: { $sum: "$audioFiles.ending" },
+                totalStartGame: { $sum: "$commands.startGame" },
+                totalPause: { $sum: "$commands.pause" },
+                totalPlay: { $sum: "$commands.play" },
+                totalRepeat: { $sum: "$commands.repeat" },
+                totalEndGame: { $sum: "$commands.endGame" },
+                totalSpeedUp: { $sum: "$commands.speedUp" },
+                totalSlowDown: { $sum: "$commands.slowDown" },
+                totalRestart: { $sum: "$commands.restart" },
+                totalClear: { $sum: "$commands.clear" },
+                totalRewind: { $sum: "$commands.rewind" },
+                totalHelp: { $sum: "$commands.help" },
+                totalHeatmapForestFight: { $sum: "$heatmap.forestFight" },
+                totalHeatmapForestObstacle: { $sum: "$heatmap.forestObstacle" },
+                totalHeatmapRiddle: { $sum: "$heatmap.riddle" },
+                totalHeatmapBoss: { $sum: "$heatmap.boss" }
+            }
+        },
+        {
+            // Calculates the schema's virtual fields
+            $addFields: {
+                totalAudioPlayed: {
+                    $add: [
+                        "$totalInputNotification",
+                        "$totalHit",
+                        "$totalDeath",
+                        "$totalIntro",
+                        "$totalForestIntro",
+                        "$totalForestFight",
+                        "$totalBattleMusic",
+                        "$totalForestObstacle",
+                        "$totalRiddleIntro",
+                        "$totalNotHere",
+                        "$totalAhRiddle",
+                        "$totalRiddle",
+                        "$totalOpenDoor",
+                        "$totalFinale",
+                        "$totalEnding"
+                    ]
+                },
+                totalCommandsUsed: {
+                    $add: [
+                        "$totalStartGame",
+                        "$totalPause",
+                        "$totalPlay",
+                        "$totalRepeat",
+                        "$totalEndGame",
+                        "$totalSpeedUp",
+                        "$totalSlowDown",
+                        "$totalRestart",
+                        "$totalClear",
+                        "$totalRewind",
+                        "$totalHelp"
+                    ]
+                },
+                totalRiddleGuesses: {
+                    $add: [
+                        "$totalRiddleGuessesCorrect",
+                        "$totalRiddleGuessesIncorrect"
+                    ]
+                },
+                totalPathChoices: {
+                    $add: [
+                        "$totalPathChoicesLeft",
+                        "$totalPathChoicesRight"
+                    ]
+                }
+            }
+        }
+    ]);
+
+    // Validates that there are stats in the db
+    if (!stats || stats.length === 0) {
+        return res.status(404).send('No stats found');
+    }else{
+        // Finds the users with the highest timePlayed and gameCompletions
+        const mostPlayed = await UserStats.findOne().sort({ timePlayed: -1 }).limit(1);
+        const mostCompletions = await UserStats.findOne().sort({ gameCompletions: -1 }).limit(1);
+
+        if (!mostPlayed) {
+            return res.status(404).send('Most played value not found');
+        }
+        if (!mostCompletions) {
+            return res.status(404).send('Most completions value not found');
+        }
+
+        // Retrieve the names of the top players
+        const userMostPlayed = await User.findOne({ _id: mostPlayed.UserID });
+        const userMostCompletions = await User.findOne({ _id: mostCompletions.UserID });
+
+        // Calculated number of users
+        const totalUsers = await User.countDocuments();
+
+        // Gathers the site-wide, mostPlayed and mostCompletions stats
+        const response = {
+            stats: stats[0],
+            mostPlayed: {
+                timePlayed: mostPlayed.timePlayed,
+                name: userMostPlayed.Name
+            },
+            mostCompletions: {
+                gameCompletions: mostCompletions.gameCompletions,
+                name: userMostCompletions.Name
+            },
+            totalUsers: totalUsers
+        };
+
+        res.status(200).json(response);
+    }
+
+    } catch (error) {
+        console.error('Error fetching site-wide stats: ', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
 
 // POST route for deleting all console history
 app.post("/post_clear_console", ensureAuthenticated,async (req, res) => {
@@ -520,7 +971,6 @@ app.use((err, req, res, next) => {
 //     }
 // });
 
-// TODO : Figure out what is double calling this (likely same culprit as the get_console_history bug on /play)
 // If nothing catches the request, the user will be sent to the login screen or the 404 page.
 app.use((req, res, next) => {
     res.redirect("/404")

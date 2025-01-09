@@ -1,5 +1,5 @@
 import {useRef, useEffect} from 'react'
-import transcripts from "../Audio/Narration/transcripts.jsx";
+import transcripts from "/public/Audio/Narration/transcripts.jsx"
 
 // TODO : Print transcripts current output when the page is exited / reloaded so we can get a better idea
 //   on where we left off
@@ -130,7 +130,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
         // Make music audio player
         musicAudio.current = document.createElement("audio")
-        musicAudio.current.src = "src/Audio/Game Sounds/battle-music.mp3"
+        musicAudio.current.src = "/Audio/Game Sounds/battle-music.mp3"
         musicAudio.current.addEventListener("ended", handleMusicEnd)
 
 
@@ -347,7 +347,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                                     default:
                                         postTextToConsole("Not a place to search on the wall. Try again", "")
                                         await new Promise(resolve => setTimeout(resolve, 4000))
-                                        playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+                                        playSoundEffect("/Audio/Game Sounds/notification-sound.mp3")
                                         incrementAudioFile("inputNotification")
                                 }
                                 break
@@ -362,7 +362,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                                         updateRiddleGuesses(0, 1) // +1 incorrect guess
                                         postTextToConsole("That is not the answer. Guess again", "")
                                         await new Promise(resolve => setTimeout(resolve, 3000))
-                                        playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+                                        playSoundEffect("/Audio/Game Sounds/notification-sound.mp3")
                                         incrementAudioFile("inputNotification")
                                 }
                                 break
@@ -373,7 +373,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                                     postTextToConsole("Correct guess, move forward", "")
                                     forestObstacleProgress.current++
                                     await new Promise(resolve => setTimeout(resolve, 2000))
-                                    playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+                                    playSoundEffect("/Audio/Game Sounds/notification-sound.mp3")
                                     incrementAudioFile("inputNotification")
                                     if (forestObstacleProgress.current === 6) {
                                         postTextToConsole("You made it past the traps!", "")
@@ -384,7 +384,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                                         obstacleStamina.current--
                                         postTextToConsole(`The trap pushes Musashi but he manages to stabilize himself. He can only do this ${obstacleStamina.current} more times before he falls!`, "")
                                         await new Promise(resolve => setTimeout(resolve, 8000))
-                                        playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+                                        playSoundEffect("/Audio/Game Sounds/notification-sound.mp3")
                                         incrementAudioFile("inputNotification")
                                     } else {
                                         updateStat(0, 0, 1) // +1 death
@@ -395,7 +395,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                                 } else {
                                     postTextToConsole(`Not a valid option. Please say "jump" or "crouch"`, "")
                                     await new Promise(resolve => setTimeout(resolve, 4000))
-                                    playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+                                    playSoundEffect("/Audio/Game Sounds/notification-sound.mp3")
                                     incrementAudioFile("inputNotification")
                                 }
                             default:
@@ -509,7 +509,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         gameStarted.current = true
         postTextToConsole("Would you like to go to the tutorial? Say yes or no", "")
         await new Promise(resolve => setTimeout(resolve, 7000))
-        playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+        playSoundEffect("/Audio/Game Sounds/notification-sound.mp3")
         incrementAudioFile("inputNotification")
         waitingForUserInput.current = "TutorialQuestion"
 
@@ -523,7 +523,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                 "decide your actions in the game. You will be prompted to give voice inputs by this sound effect.", "")
             // Just to make sure the tts is done first
             await new Promise(resolve => setTimeout(resolve, 12000))
-            playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+            playSoundEffect("/Audio/Game Sounds/notification-sound.mp3")
             incrementAudioFile("inputNotification")
             await new Promise(resolve => setTimeout(resolve, 1000))
 
@@ -545,7 +545,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
             postTextToConsole("Would you like to hear the tutorial again? Say yes or no", "")
             await new Promise(resolve => setTimeout(resolve, 68000))
-            playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+            playSoundEffect("/Audio/Game Sounds/notification-sound.mp3")
             incrementAudioFile("inputNotification")
             waitingForUserInput.current = "TutorialQuestion"
 
@@ -567,14 +567,14 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         await new Promise(async (resolve, reject) => {
             cancelGame = reject;
             // Intro
-            audioRef.current.src = "./src/Audio/Narration/Intro.mp3"
+            audioRef.current.src = "/Audio/Narration/Intro.mp3"
             incrementAudioFile("intro")
             transcriptOutput("Intro")
             audioStart()
             // Block until transcript and audio are done
             await new Promise(async resolve => {storyBlock=resolve})
             // Forest
-            audioRef.current.src = "./src/Audio/Narration/forestIntro.mp3"
+            audioRef.current.src = "/Audio/Narration/forestIntro.mp3"
             incrementAudioFile("forestIntro")
             transcriptOutput("forestIntro")
             audioStart()
@@ -586,7 +586,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             // TODO : integrate tts
             postTextToConsole("Choose your path. Do you want to go left or right?", "")
             await new Promise(resolve => setTimeout(resolve, 4000))
-            playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+            playSoundEffect("/Audio/Game Sounds/notification-sound.mp3")
             incrementAudioFile("inputNotification")
             resolve()
         })
@@ -616,7 +616,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
             cancelGame = reject;
 
-            audioRef.current.src = "./src/Audio/Narration/riddleIntro.mp3"
+            audioRef.current.src = "/Audio/Narration/riddleIntro.mp3"
             incrementAudioFile("riddleIntro")
             transcriptOutput("riddleIntro")
             audioStart()
@@ -626,7 +626,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             postTextToConsole("Do you want to look left, right, up, or down?", "")
             waitingForUserInput.current = "riddleStart"
             await new Promise(resolve => setTimeout(resolve, 4000))
-            playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+            playSoundEffect("/Audio/Game Sounds/notification-sound.mp3")
             incrementAudioFile("inputNotification")
             resolve()
         })
@@ -638,13 +638,13 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             cancelGame = reject;
 
             waitingForUserInput.current = ""
-            audioRef.current.src = "./src/Audio/Narration/notHere.mp3"
+            audioRef.current.src = "/Audio/Narration/notHere.mp3"
             incrementAudioFile("notHere")
             transcriptOutput("notHere")
             audioStart()
             // Block until transcript and audio are done
             await new Promise(async resolve => {storyBlock=resolve})
-            playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+            playSoundEffect("/Audio/Game Sounds/notification-sound.mp3")
             incrementAudioFile("inputNotification")
             waitingForUserInput.current = "riddleStart"
 
@@ -658,20 +658,20 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             cancelGame = reject;
 
             waitingForUserInput.current = ""
-            audioRef.current.src = "./src/Audio/Narration/ahRiddle.mp3"
+            audioRef.current.src = "/Audio/Narration/ahRiddle.mp3"
             incrementAudioFile("ahRiddle")
             transcriptOutput("ahRiddle")
             audioStart()
             // Block until transcript and audio are done
             await new Promise(async resolve => {storyBlock=resolve})
 
-            audioRef.current.src = "./src/Audio/Narration/riddle.mp3"
+            audioRef.current.src = "/Audio/Narration/riddle.mp3"
             incrementAudioFile("riddle")
             transcriptOutput("riddle")
             audioStart()
             // Block until transcript and audio are done
             await new Promise(async resolve => {storyBlock=resolve})
-            playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+            playSoundEffect("/Audio/Game Sounds/notification-sound.mp3")
             incrementAudioFile("inputNotification")
 
             waitingForUserInput.current = "Riddle"
@@ -686,7 +686,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             cancelGame = reject;
 
             waitingForUserInput.current = ""
-            audioRef.current.src = "./src/Audio/Narration/openDoor.mp3"
+            audioRef.current.src = "/Audio/Narration/openDoor.mp3"
             incrementAudioFile("openDoor")
             transcriptOutput("openDoor")
             audioStart()
@@ -708,7 +708,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
             cancelGame = reject;
 
-            audioRef.current.src = "./src/Audio/Narration/finale.mp3"
+            audioRef.current.src = "/Audio/Narration/finale.mp3"
             incrementAudioFile("finale")
             transcriptOutput("finale")
             audioStart()
@@ -731,7 +731,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             cancelGame = reject;
 
             await new Promise(resolve => setTimeout(resolve, 4000))
-            audioRef.current.src = "./src/Audio/Narration/ending.mp3"
+            audioRef.current.src = "/Audio/Narration/ending.mp3"
             incrementAudioFile("ending")
             transcriptOutput("ending")
             audioStart()
@@ -753,7 +753,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         await new Promise(async (resolve, reject) => {
             cancelGame = reject
 
-            audioRef.current.src = "./src/Audio/Narration/forestFight.mp3"
+            audioRef.current.src = "/Audio/Narration/forestFight.mp3"
             incrementAudioFile("forestFight")
             transcriptOutput("forestFight")
             audioStart()
@@ -780,7 +780,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         await new Promise(async (resolve, reject) => {
             cancelGame = reject
 
-            audioRef.current.src = "./src/Audio/Narration/forestObstacle.mp3"
+            audioRef.current.src = "/Audio/Narration/forestObstacle.mp3"
             incrementAudioFile("forestObstacle")
             transcriptOutput("forestObstacle")
             audioStart()
@@ -790,7 +790,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             waitingForUserInput.current = "forestObstacle"
             postTextToConsole(`Say crouch, or jump in line with Musashis guess. Say "hint" in order to hear the dialogue again`, "")
             await new Promise(resolve => setTimeout(resolve, 7000))
-            playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3")
+            playSoundEffect("/Audio/Game Sounds/notification-sound.mp3")
             incrementAudioFile("inputNotification")
 
             resolve()
@@ -911,7 +911,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         if (movePicked === "slash") {
             damage = 30;
             playerChargingStab.current = false;
-            playSoundEffect("src/Audio/Game Sounds/sword-clash.mp3")
+            playSoundEffect("/Audio/Game Sounds/sword-clash.mp3")
             incrementAudioFile("inputNotification")
         } else if (movePicked === "stab" && playerChargingStab.current === true) {
             damage = 70;
@@ -942,7 +942,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             }
             musicAudio.current.currentTime = 0
             musicAudio.current.pause()
-            playSoundEffect("src/Audio/Game Sounds/male-death-sound.mp3")
+            playSoundEffect("/Audio/Game Sounds/male-death-sound.mp3")
             incrementAudioFile("inputNotification")
             return
         }
@@ -971,7 +971,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         // If the player has been killed
         if (playerHealth.current <= 0) {
             updateStat(0, 0, 1) // +1 death
-            playSoundEffect("src/Audio/Game Sounds/male-death-sound.mp3")
+            playSoundEffect("/Audio/Game Sounds/male-death-sound.mp3")
             incrementAudioFile("inputNotification")
             postTextToConsole("You have been killed and lost the fight. Game over.", "")
             waitingForUserInput.current = ""
