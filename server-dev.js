@@ -14,6 +14,7 @@ import error from "express/lib/view.js";
 import path from "path";
 import {redirect} from "react-router-dom";
 
+
 const app = express();
 
 //  middleware configurations
@@ -653,7 +654,32 @@ app.post("/post_console_history",ensureAuthenticated ,async (req, res) => {
         res.status(500).send('Internal Server Error');
     }
 })
-
+//dashboard contains all the admin dashboard needed
+// Replace the existing /dashboard route with this
+app.get('/dashboard', ensureAuthenticated, async (req, res) => {
+    try {
+        console.log("admin_dashboard");
+        const html = await renderReact(req.originalUrl);
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
+    } catch (error) {
+        console.error('Error rendering dashboard:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+//getting user-types which will be crucial for the banner
+// Add this new endpoint in your server code
+app.get('/user/type', ensureAuthenticated, async (req, res) => {
+    try {
+        if (!req.session.user) {
+            return res.status(401).json({ error: 'Not authenticated' });
+        }
+        res.json({ userType: req.session.user.userType });
+        console.log('user type being called');
+    } catch (error) {
+        console.error('Error getting user type:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 // Get stats
 app.get('/user/stats', ensureAuthenticated, async (req, res) => {
     try {
@@ -935,7 +961,7 @@ app.post("/post_clear_console", ensureAuthenticated,async (req, res) => {
 })
 
 // This will render all pages React code. The routing specific to the page is in the App.jsx file.
-const routes = ["/play", "/my-stats", "/login", "/user-stats", "/404", "/settings"]
+const routes = ["/play", "/my-stats", "/login", "/user-stats", "/404", "/settings", "/dashboard"];
 app.get(routes , ensureAuthenticated, async (req, res, next) => {
     console.log(`Generic GET called with the url :  ${req.originalUrl}`)
     try{

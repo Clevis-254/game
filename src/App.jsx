@@ -8,6 +8,7 @@ import SettingsPage from "./Pages/Settings/SettingsPage.jsx";
 import ForgotPassword from './Pages/ForgotPassword';
 import ResetPassword from './Pages/ResetPassword';
 import { Error404 } from "./Errors/Error404.jsx";
+import Dashboard from "./Admin/dashboard.jsx";
 const App = () => {
     return (
         <Routes>
@@ -19,6 +20,7 @@ const App = () => {
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/dashboard" element={<Dashboard/>} />
             <Route path="/404" element={<Error404 />} />
         </Routes>
     )

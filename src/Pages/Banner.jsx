@@ -1,7 +1,24 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 export function Banner() {
+  const [userType, setUserType] = useState(null);
+
+  useEffect(() => {
+    const fetchUserType = async () => {
+      try {
+        const response = await fetch('/user/type');
+        if (response.ok) {
+          const data = await response.json();
+          setUserType(data.userType);
+        }
+      } catch (error) {
+        console.error('Error fetching user type:', error);
+      }
+    };
+    fetchUserType();
+  }, []);
+
   const handleLogout = async () => {
     try {
       const response = await fetch('/logout', {
@@ -20,6 +37,8 @@ export function Banner() {
     }
   };
 
+  const isAdmin = userType === 'admin';
+
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
       <div className="container d-flex justify-content-between">
@@ -37,7 +56,6 @@ export function Banner() {
         >
           <span className="navbar-toggler-icon"></span>
         </button>
-
         <div className="collapse navbar-collapse justify-content-between" id="navbarsExample07">
           <ul className="navbar-nav">
             <li className="nav-item">
@@ -50,17 +68,34 @@ export function Banner() {
                 My Stats
               </a>
             </li>
-            <li className="nav-item">
-              <a className="nav-link" href="/user-stats">
-                User Stats
-              </a>
-            </li>
+            
+            {isAdmin && (
+              <>
+                <li className="nav-item">
+                  <a className="nav-link" href="/user-stats">
+                    User Stats
+                  </a>
+                </li>
+                <li className="nav-item">
+                  <a className="nav-link" href="/dashboard">
+                    Dashboard
+                  </a>
+                </li>
+                <li className="nav-item">
+                  <a className="nav-link" href="/add-user">
+                    Add User
+                  </a>
+                </li>
+              </>
+            )}
+            
             <li className="nav-item">
               <Link className="nav-link" to="/settings">
                 Settings
               </Link>
             </li>
           </ul>
+          
           <button className="btn btn-link nav-link" onClick={handleLogout}>
             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none">
               <path

@@ -6,6 +6,8 @@ import { stripBasename, UNSAFE_warning, UNSAFE_invariant, joinPaths, matchPath, 
 import { UNSAFE_NavigationContext, useHref, useResolvedPath, useLocation, UNSAFE_DataRouterStateContext, useNavigate, createPath, UNSAFE_useRouteId, UNSAFE_RouteContext, UNSAFE_DataRouterContext, parsePath, Router, Routes, Route } from "react-router";
 import "react-dom";
 import { Sword } from "lucide-react";
+import { Bar } from "react-chartjs-2";
+import { Chart, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from "chart.js";
 import { useForm } from "react-hook-form";
 import debounce from "lodash.debounce";
 /**
@@ -582,7 +584,7 @@ function encodeLocation(to) {
   };
 }
 const ABSOLUTE_URL_REGEX = /^(?:[a-z][a-z0-9+.-]*:|\/\/)/i;
-function Banner() {
+function Banner({ userType }) {
   const handleLogout = async () => {
     try {
       const response = await fetch("/logout", {
@@ -619,7 +621,8 @@ function Banner() {
       /* @__PURE__ */ jsxs("ul", { className: "navbar-nav", children: [
         /* @__PURE__ */ jsx("li", { className: "nav-item", children: /* @__PURE__ */ jsx("a", { className: "nav-link", href: "/play", children: "Play" }) }),
         /* @__PURE__ */ jsx("li", { className: "nav-item", children: /* @__PURE__ */ jsx("a", { className: "nav-link", href: "/my-stats", children: "My Stats" }) }),
-        /* @__PURE__ */ jsx("li", { className: "nav-item", children: /* @__PURE__ */ jsx("a", { className: "nav-link", href: "/user-stats", children: "User Stats" }) }),
+        userType === "admin" && /* @__PURE__ */ jsx("li", { className: "nav-item", children: /* @__PURE__ */ jsx("a", { className: "nav-link", href: "/user-stats", children: "User Stats" }) }),
+        userType === "admin" && /* @__PURE__ */ jsx("li", { className: "nav-item", children: /* @__PURE__ */ jsx("a", { className: "nav-link", href: "/add-user", children: "Add User" }) }),
         /* @__PURE__ */ jsx("li", { className: "nav-item", children: /* @__PURE__ */ jsx(Link, { className: "nav-link", to: "/settings", children: "Settings" }) })
       ] }),
       /* @__PURE__ */ jsxs("button", { className: "btn btn-link nav-link", onClick: handleLogout, children: [
@@ -792,6 +795,24 @@ const Console = forwardRef(function Console2({
       setCommandToGameTrigger(true);
     }
   }
+  async function incrementStat(command) {
+    try {
+      const response = await fetch("/user/stats", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          commands: { [command]: 1 }
+        })
+      });
+      if (!response.ok) {
+        console.error(`Failed to update stats: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  }
   function new_console_input() {
     if (inputRef.current) {
       inputRef.current.focus();
@@ -801,15 +822,18 @@ const Console = forwardRef(function Console2({
     console_input_box.value = "";
     switch (console_input_text) {
       case "clear":
+        incrementStat("clear");
         setConsoleText([...consoleText, "Console : Clearing Console now..."]);
         clear_console_history();
         break;
       case "start game":
+        incrementStat("startGame");
         post_new_input(console_input_text, "User");
         commandToGame(console_input_text);
         post_new_input("Starting game now...", "Console");
         break;
       case "help":
+        incrementStat("help");
         post_new_input(console_input_text, "User");
         const outputList = [
           "Here is a list of all current commands",
@@ -831,12 +855,37 @@ const Console = forwardRef(function Console2({
         post_new_input("In this game you will fight many enemies in battle. These battles are turn based.In battle you have four moves, slash, stab, parry slash and parry stab. Slash is a standard attack that can be parried withparry slash, stab is a move that you charge up on your initial turn and can then either go throughwith it  on your next turn and do lots of damage to your opponent or you can switch to slash to trick your opponent.Be wary however as if your opponent predicts this and picks parry slash then you will the stunned andmiss a turn. The same goes for if your opponent predicts you follow through and they pick parry stab.This makes stab a risky move but with high reward.", "");
         break;
       case "play":
+        incrementStat("play");
+        post_new_input(console_input_text, "User");
+        commandToGame(console_input_text);
+        break;
       case "pause":
+        incrementStat("pause");
+        post_new_input(console_input_text, "User");
+        commandToGame(console_input_text);
+        break;
       case "speed up":
+        incrementStat("speedUp");
+        post_new_input(console_input_text, "User");
+        commandToGame(console_input_text);
+        break;
       case "slow down":
+        incrementStat("slowDown");
+        post_new_input(console_input_text, "User");
+        commandToGame(console_input_text);
+        break;
       case "rewind":
+        incrementStat("rewind");
+        post_new_input(console_input_text, "User");
+        commandToGame(console_input_text);
+        break;
       case "end game":
+        incrementStat("endGame");
+        post_new_input(console_input_text, "User");
+        commandToGame(console_input_text);
+        break;
       case "restart":
+        incrementStat("restart");
         post_new_input(console_input_text, "User");
         commandToGame(console_input_text);
         break;
@@ -946,6 +995,31 @@ function GameLogic({
   let opponent = useRef(0);
   useRef(null);
   const musicAudio = useRef(null);
+  async function incrementAudioFile(audioFileName) {
+    try {
+      const audioFiles = {
+        [audioFileName]: 1
+      };
+      const response = await fetch("/user/stats", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          audioFiles
+        })
+      });
+      if (!response.ok) {
+        console.error(`Failed to increment audio file stat: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  }
+  let startTimeFight = useRef(null);
+  let startTimeObstacle = useRef(null);
+  let startTimeRiddle = useRef(null);
+  let startTimeBoss = useRef(null);
   useEffect(() => {
     audioRef.current = document.createElement("audio");
     const handleAudioEnd = () => {
@@ -962,6 +1036,7 @@ function GameLogic({
     };
     musicAudio.current = document.createElement("audio");
     musicAudio.current.src = "src/Audio/Game Sounds/battle-music.mp3";
+    incrementAudioFile("battleMusic");
     musicAudio.current.addEventListener("ended", handleMusicEnd);
     return () => {
       audioRef.current.removeEventListener("ended", handleAudioEnd);
@@ -1019,6 +1094,42 @@ function GameLogic({
       transcriptRewindSeconds.current = seconds;
     }
   };
+  async function updateRiddleGuesses(correct, incorrect) {
+    try {
+      const response = await fetch("/user/stats", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          riddleGuesses: { correct, incorrect }
+        })
+      });
+      if (!response.ok) {
+        console.error(`Failed to update stats: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  }
+  async function updatePathChoice(left, right) {
+    try {
+      const response = await fetch("/user/stats", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          pathChoices: { left, right }
+        })
+      });
+      if (!response.ok) {
+        console.error(`Failed to update stats: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  }
   const isInitialRenderConsoleToGame = useRef(true);
   useEffect(() => {
     cmdFunc();
@@ -1112,18 +1223,22 @@ function GameLogic({
                     postTextToConsole("Not a place to search on the wall. Try again", "");
                     await new Promise((resolve) => setTimeout(resolve, 4e3));
                     playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3");
+                    incrementAudioFile("inputNotification");
                 }
                 break;
               case "Riddle":
                 switch (consoleToGameCommandRef.current) {
                   case "door":
                   case "a door":
+                    updateRiddleGuesses(1, 0);
                     riddleDoorOpen();
                     break;
                   default:
+                    updateRiddleGuesses(0, 1);
                     postTextToConsole("That is not the answer. Guess again", "");
                     await new Promise((resolve) => setTimeout(resolve, 3e3));
                     playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3");
+                    incrementAudioFile("inputNotification");
                 }
                 break;
               case "forestObstacle":
@@ -1134,6 +1249,7 @@ function GameLogic({
                   forestObstacleProgress.current++;
                   await new Promise((resolve) => setTimeout(resolve, 2e3));
                   playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3");
+                  incrementAudioFile("inputNotification");
                   if (forestObstacleProgress.current === 6) {
                     postTextToConsole("You made it past the traps!", "");
                     riddleStart();
@@ -1144,7 +1260,9 @@ function GameLogic({
                     postTextToConsole(`The trap pushes Musashi but he manages to stabilize himself. He can only do this ${obstacleStamina.current} more times before he falls!`, "");
                     await new Promise((resolve) => setTimeout(resolve, 8e3));
                     playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3");
+                    incrementAudioFile("inputNotification");
                   } else {
+                    updateStat(0, 0, 1);
                     postTextToConsole("Musashi was knocked into the ocean! Game Over.", "");
                     endGame(true);
                   }
@@ -1152,6 +1270,7 @@ function GameLogic({
                   postTextToConsole(`Not a valid option. Please say "jump" or "crouch"`, "");
                   await new Promise((resolve) => setTimeout(resolve, 4e3));
                   playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3");
+                  incrementAudioFile("inputNotification");
                 }
               default:
                 console.log("GameLogic:Not a command match");
@@ -1168,6 +1287,27 @@ function GameLogic({
       storyBlock("storyBlock ran");
     }
   }
+  async function updateStat(gameSeconds, completions, deaths) {
+    try {
+      const response = await fetch("/user/stats", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          timePlayed: gameSeconds,
+          gameCompletions: completions,
+          numberOfDeaths: deaths
+        })
+      });
+      if (!response.ok) {
+        console.error(`Failed to update stats: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  }
+  let startTime = useRef(null);
   async function endGame(restart) {
     if (cancelGame) cancelGame("Ended Game");
     audioPause();
@@ -1175,6 +1315,8 @@ function GameLogic({
     gameStarted.current = false;
     forestObstacleProgress.current = 0;
     obstacleStamina.current = 5;
+    const elapsedTime = Math.floor((/* @__PURE__ */ new Date() - startTime.current) / 1e3);
+    updateStat(elapsedTime, 0, 0);
     await new Promise((resolve) => setTimeout(resolve, 300));
     delayedPosition.current = 0;
     if (restart) {
@@ -1185,6 +1327,18 @@ function GameLogic({
       postTextToConsole("Game session ended.", "Console");
     }
   }
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (gameStarted.current) {
+        const elapsedTime = Math.floor((/* @__PURE__ */ new Date() - startTime.current) / 1e3);
+        updateStat(elapsedTime, 0, 0);
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
   async function tutorialQuestion() {
     if (gameStarted.current === true) {
       postTextToConsole("The game is already started", "Console");
@@ -1194,6 +1348,7 @@ function GameLogic({
     postTextToConsole("Would you like to go to the tutorial? Say yes or no", "");
     await new Promise((resolve) => setTimeout(resolve, 7e3));
     playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3");
+    incrementAudioFile("inputNotification");
     waitingForUserInput.current = "TutorialQuestion";
   }
   async function tutorial() {
@@ -1202,6 +1357,7 @@ function GameLogic({
       postTextToConsole("Welcome to the tutorial. Throughout this experience, you will be able to give voice inputs to decide your actions in the game. You will be prompted to give voice inputs by this sound effect.", "");
       await new Promise((resolve2) => setTimeout(resolve2, 12e3));
       playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3");
+      incrementAudioFile("inputNotification");
       await new Promise((resolve2) => setTimeout(resolve2, 1e3));
       postTextToConsole("This game has many different commands to control the experience. These include but are notlimited to. Rewind, speed up, slow down, pause and play. You can call these commandsat any time. If you wish to learn about any of these commandsplease say `help` for more information", "");
       postTextToConsole("In this game you will fight many enemies in battle. These battles are turn based. In battle you have four moves, slash, stab, parry slash and parry stab. Slash is a standard attack that can be parried withparry slash, stab is a move that you charge up on your initial turn and can then either go throughwith it  on your next turn and do lots of damage to your opponent or you can switch to slash to trick your opponent. Be wary however as if your opponent predicts this and picks parry slash then you will then be stunned andmiss a turn. The same goes for if your opponent predicts you follow through and they pick parry stab. This makes stab a risky move but with high reward.", "");
@@ -1209,6 +1365,7 @@ function GameLogic({
       postTextToConsole("Would you like to hear the tutorial again? Say yes or no", "");
       await new Promise((resolve2) => setTimeout(resolve2, 68e3));
       playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3");
+      incrementAudioFile("inputNotification");
       waitingForUserInput.current = "TutorialQuestion";
       resolve();
     });
@@ -1216,15 +1373,18 @@ function GameLogic({
   let gameStarted = useRef(false);
   let cancelGame;
   async function startGame() {
+    startTime.current = /* @__PURE__ */ new Date();
     await new Promise(async (resolve, reject) => {
       cancelGame = reject;
       audioRef.current.src = "./src/Audio/Narration/Intro.mp3";
+      incrementAudioFile("intro");
       transcriptOutput("Intro");
       audioStart();
       await new Promise(async (resolve2) => {
         storyBlock = resolve2;
       });
       audioRef.current.src = "./src/Audio/Narration/forestIntro.mp3";
+      incrementAudioFile("forestIntro");
       transcriptOutput("forestIntro");
       audioStart();
       await new Promise(async (resolve2) => {
@@ -1235,6 +1395,7 @@ function GameLogic({
       postTextToConsole("Choose your path. Do you want to go left or right?", "");
       await new Promise((resolve2) => setTimeout(resolve2, 4e3));
       playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3");
+      incrementAudioFile("inputNotification");
       resolve();
     });
   }
@@ -1247,9 +1408,11 @@ function GameLogic({
     });
   }
   async function riddleStart() {
+    startTimeRiddle.current = /* @__PURE__ */ new Date();
     await new Promise(async (resolve, reject) => {
       cancelGame = reject;
       audioRef.current.src = "./src/Audio/Narration/riddleIntro.mp3";
+      incrementAudioFile("riddleIntro");
       transcriptOutput("riddleIntro");
       audioStart();
       await new Promise(async (resolve2) => {
@@ -1259,6 +1422,7 @@ function GameLogic({
       waitingForUserInput.current = "riddleStart";
       await new Promise((resolve2) => setTimeout(resolve2, 4e3));
       playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3");
+      incrementAudioFile("inputNotification");
       resolve();
     });
   }
@@ -1267,12 +1431,14 @@ function GameLogic({
       cancelGame = reject;
       waitingForUserInput.current = "";
       audioRef.current.src = "./src/Audio/Narration/notHere.mp3";
+      incrementAudioFile("notHere");
       transcriptOutput("notHere");
       audioStart();
       await new Promise(async (resolve2) => {
         storyBlock = resolve2;
       });
       playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3");
+      incrementAudioFile("inputNotification");
       waitingForUserInput.current = "riddleStart";
       resolve();
     });
@@ -1282,18 +1448,21 @@ function GameLogic({
       cancelGame = reject;
       waitingForUserInput.current = "";
       audioRef.current.src = "./src/Audio/Narration/ahRiddle.mp3";
+      incrementAudioFile("ahRiddle");
       transcriptOutput("ahRiddle");
       audioStart();
       await new Promise(async (resolve2) => {
         storyBlock = resolve2;
       });
       audioRef.current.src = "./src/Audio/Narration/riddle.mp3";
+      incrementAudioFile("riddle");
       transcriptOutput("riddle");
       audioStart();
       await new Promise(async (resolve2) => {
         storyBlock = resolve2;
       });
       playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3");
+      incrementAudioFile("inputNotification");
       waitingForUserInput.current = "Riddle";
       resolve();
     });
@@ -1303,6 +1472,7 @@ function GameLogic({
       cancelGame = reject;
       waitingForUserInput.current = "";
       audioRef.current.src = "./src/Audio/Narration/openDoor.mp3";
+      incrementAudioFile("openDoor");
       transcriptOutput("openDoor");
       audioStart();
       await new Promise(async (resolve2) => {
@@ -1313,9 +1483,11 @@ function GameLogic({
     });
   }
   async function finale() {
+    startTimeBoss.current = /* @__PURE__ */ new Date();
     await new Promise(async (resolve, reject) => {
       cancelGame = reject;
       audioRef.current.src = "./src/Audio/Narration/finale.mp3";
+      incrementAudioFile("finale");
       transcriptOutput("finale");
       audioStart();
       await new Promise(async (resolve2) => {
@@ -1327,10 +1499,12 @@ function GameLogic({
     });
   }
   async function ending() {
+    updateStat(0, 1, 0);
     await new Promise(async (resolve, reject) => {
       cancelGame = reject;
       await new Promise((resolve2) => setTimeout(resolve2, 4e3));
       audioRef.current.src = "./src/Audio/Narration/ending.mp3";
+      incrementAudioFile("ending");
       transcriptOutput("ending");
       audioStart();
       await new Promise(async (resolve2) => {
@@ -1342,10 +1516,13 @@ function GameLogic({
     });
   }
   async function forestLeft() {
+    updatePathChoice(1, 0);
+    startTimeFight.current = /* @__PURE__ */ new Date();
     postTextToConsole("You picked 'left'", "");
     await new Promise(async (resolve, reject) => {
       cancelGame = reject;
       audioRef.current.src = "./src/Audio/Narration/forestFight.mp3";
+      incrementAudioFile("forestFight");
       transcriptOutput("forestFight");
       audioStart();
       await new Promise(async (resolve2) => {
@@ -1360,10 +1537,13 @@ function GameLogic({
   let forestObstacleProgress = useRef(0);
   let obstacleStamina = useRef(5);
   async function forestRight() {
+    updatePathChoice(0, 1);
+    startTimeObstacle.current = /* @__PURE__ */ new Date();
     postTextToConsole("You picked 'right'", "");
     await new Promise(async (resolve, reject) => {
       cancelGame = reject;
       audioRef.current.src = "./src/Audio/Narration/forestObstacle.mp3";
+      incrementAudioFile("forestObstacle");
       transcriptOutput("forestObstacle");
       audioStart();
       await new Promise(async (resolve2) => {
@@ -1373,6 +1553,7 @@ function GameLogic({
       postTextToConsole(`Say crouch, or jump in line with Musashis guess. Say "hint" in order to hear the dialogue again`, "");
       await new Promise((resolve2) => setTimeout(resolve2, 7e3));
       playSoundEffect("src/Audio/Game Sounds/notification-sound.mp3");
+      incrementAudioFile("inputNotification");
       resolve();
     });
   }
@@ -1457,6 +1638,7 @@ function GameLogic({
       damage = 30;
       playerChargingStab.current = false;
       playSoundEffect("src/Audio/Game Sounds/sword-clash.mp3");
+      incrementAudioFile("inputNotification");
     } else if (movePicked === "stab" && playerChargingStab.current === true) {
       damage = 70;
       playerChargingStab.current = false;
@@ -1480,6 +1662,7 @@ function GameLogic({
       musicAudio.current.currentTime = 0;
       musicAudio.current.pause();
       playSoundEffect("src/Audio/Game Sounds/male-death-sound.mp3");
+      incrementAudioFile("inputNotification");
       return;
     }
     damage = 0;
@@ -1499,7 +1682,9 @@ function GameLogic({
     }
     playerHealth.current -= damage;
     if (playerHealth.current <= 0) {
+      updateStat(0, 0, 1);
       playSoundEffect("src/Audio/Game Sounds/male-death-sound.mp3");
+      incrementAudioFile("inputNotification");
       postTextToConsole("You have been killed and lost the fight. Game over.", "");
       waitingForUserInput.current = "";
       await new Promise((resolve) => setTimeout(resolve, 15e3));
@@ -1661,6 +1846,7 @@ function Play() {
     )
   ] });
 }
+Chart.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 function UserStats() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1696,6 +1882,24 @@ function UserStats() {
       error
     ] });
   }
+  const barChartData = {
+    labels: ["Forest Fight", "Forest Obstacle", "Riddle", "Boss"],
+    datasets: [
+      {
+        label: "(Measured in Seconds)",
+        data: [
+          stats.stats.totalHeatmapForestObstacle,
+          stats.stats.totalHeatmapForestFight,
+          stats.stats.totalHeatmapRiddle,
+          stats.stats.totalHeatmapBoss
+        ],
+        backgroundColor: ["red", "blue", "green", "pink"],
+        // different colors for each bar
+        borderColor: "#000",
+        borderWidth: 1
+      }
+    ]
+  };
   return /* @__PURE__ */ jsxs(Fragment, { children: [
     /* @__PURE__ */ jsx(Banner, {}),
     /* @__PURE__ */ jsx("h1", { style: { textAlign: "center" }, children: "User Stats" }),
@@ -1773,28 +1977,64 @@ function UserStats() {
       /* @__PURE__ */ jsxs("div", { className: "statSection", children: [
         /* @__PURE__ */ jsx("h2", { className: "text-uppercase", children: "Audio File Play Count" }),
         /* @__PURE__ */ jsxs("h4", { children: [
+          "inputNotification: ",
+          stats.stats.totalInputNotification
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
           "hit: ",
           stats.stats.totalHit
         ] }),
         /* @__PURE__ */ jsxs("h4", { children: [
-          "miss: ",
-          stats.stats.totalMiss
-        ] }),
-        /* @__PURE__ */ jsxs("h4", { children: [
-          "damaged: ",
-          stats.stats.totalDamaged
-        ] }),
-        /* @__PURE__ */ jsxs("h4", { children: [
-          "stamina: ",
-          stats.stats.totalStamina
-        ] }),
-        /* @__PURE__ */ jsxs("h4", { children: [
-          "eating: ",
-          stats.stats.totalEating
-        ] }),
-        /* @__PURE__ */ jsxs("h4", { children: [
           "death: ",
           stats.stats.totalDeath
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "intro: ",
+          stats.stats.totalIntro
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "forestIntro: ",
+          stats.stats.totalForestIntro
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "forestFight: ",
+          stats.stats.totalForestFight
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "battleMusic: ",
+          stats.stats.totalBattleMusic
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "forestObstacle: ",
+          stats.stats.totalForestObstacle
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "riddleIntro: ",
+          stats.stats.totalRiddleIntro
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "notHere: ",
+          stats.stats.totalNotHere
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "ahRiddle: ",
+          stats.stats.totalAhRiddle
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "riddle: ",
+          stats.stats.totalRiddle
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "openDoor: ",
+          stats.stats.totalOpenDoor
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "finale: ",
+          stats.stats.totalFinale
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "ending: ",
+          stats.stats.totalEnding
         ] })
       ] }),
       /* @__PURE__ */ jsxs("div", { className: "statSection", children: [
@@ -1810,6 +2050,10 @@ function UserStats() {
         /* @__PURE__ */ jsxs("h4", { children: [
           "Pause: ",
           stats.stats.totalPause
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "Play: ",
+          stats.stats.totalPlay
         ] }),
         /* @__PURE__ */ jsxs("h4", { children: [
           "End Game: ",
@@ -1842,16 +2086,12 @@ function UserStats() {
       ] })
     ] }),
     /* @__PURE__ */ jsx("div", { className: "statsContainer", children: /* @__PURE__ */ jsxs("div", { className: "statSectionHeatmap", children: [
-      /* @__PURE__ */ jsx("h1", { className: "text-uppercase", children: "Heatmap" }),
-      /* @__PURE__ */ jsx(
-        "img",
-        {
-          src: "https://talos-interactive.com/wp-content/uploads/2022/04/GameTelemetryGallery05-1024x576.jpg"
-        }
-      )
+      /* @__PURE__ */ jsx("h1", { className: "text-uppercase", children: "Time Spent in Each Area" }),
+      /* @__PURE__ */ jsx(Bar, { data: barChartData, options: { responsive: true, scales: { x: { beginAtZero: true }, y: { beginAtZero: true } } } })
     ] }) })
   ] });
 }
+Chart.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 function MyStats() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1887,6 +2127,24 @@ function MyStats() {
       error
     ] });
   }
+  const barChartData = {
+    labels: ["Forest Fight", "Forest Obstacle", "Riddle", "Boss"],
+    datasets: [
+      {
+        label: "(Measured in Seconds)",
+        data: [
+          stats.heatmap.forestObstacle,
+          stats.heatmap.forestFight,
+          stats.heatmap.riddle,
+          stats.heatmap.boss
+        ],
+        backgroundColor: ["red", "blue", "green", "pink"],
+        // different colors for each bar
+        borderColor: "#000",
+        borderWidth: 1
+      }
+    ]
+  };
   return /* @__PURE__ */ jsxs(Fragment, { children: [
     /* @__PURE__ */ jsx(Banner, {}),
     /* @__PURE__ */ jsx("h1", { style: { textAlign: "center" }, children: "My Stats" }),
@@ -1950,28 +2208,64 @@ function MyStats() {
       /* @__PURE__ */ jsxs("div", { className: "statSection", children: [
         /* @__PURE__ */ jsx("h2", { className: "text-uppercase", children: "Audio File Play Count" }),
         /* @__PURE__ */ jsxs("h4", { children: [
+          "inputNotification: ",
+          stats.audioFiles.inputNotification
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
           "hit: ",
           stats.audioFiles.hit
         ] }),
         /* @__PURE__ */ jsxs("h4", { children: [
-          "miss: ",
-          stats.audioFiles.miss
-        ] }),
-        /* @__PURE__ */ jsxs("h4", { children: [
-          "damaged: ",
-          stats.audioFiles.damaged
-        ] }),
-        /* @__PURE__ */ jsxs("h4", { children: [
-          "stamina: ",
-          stats.audioFiles.stamina
-        ] }),
-        /* @__PURE__ */ jsxs("h4", { children: [
-          "eating: ",
-          stats.audioFiles.eating
-        ] }),
-        /* @__PURE__ */ jsxs("h4", { children: [
           "death: ",
           stats.audioFiles.death
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "intro: ",
+          stats.audioFiles.intro
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "forestIntro: ",
+          stats.audioFiles.forestIntro
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "forestFight: ",
+          stats.audioFiles.forestFight
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "battleMusic: ",
+          stats.audioFiles.battleMusic
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "forestObstacle: ",
+          stats.audioFiles.forestObstacle
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "riddleIntro: ",
+          stats.audioFiles.riddleIntro
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "notHere: ",
+          stats.audioFiles.notHere
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "ahRiddle: ",
+          stats.audioFiles.ahRiddle
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "riddle: ",
+          stats.audioFiles.riddle
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "openDoor: ",
+          stats.audioFiles.openDoor
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "finale: ",
+          stats.audioFiles.finale
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "ending: ",
+          stats.audioFiles.ending
         ] })
       ] }),
       /* @__PURE__ */ jsxs("div", { className: "statSection", children: [
@@ -1987,6 +2281,10 @@ function MyStats() {
         /* @__PURE__ */ jsxs("h4", { children: [
           "Pause: ",
           stats.commands.pause
+        ] }),
+        /* @__PURE__ */ jsxs("h4", { children: [
+          "Play: ",
+          stats.commands.play
         ] }),
         /* @__PURE__ */ jsxs("h4", { children: [
           "End Game: ",
@@ -2019,13 +2317,8 @@ function MyStats() {
       ] })
     ] }),
     /* @__PURE__ */ jsx("div", { className: "statsContainer", children: /* @__PURE__ */ jsxs("div", { className: "statSectionHeatmap", children: [
-      /* @__PURE__ */ jsx("h1", { className: "text-uppercase", children: "Heatmap" }),
-      /* @__PURE__ */ jsx(
-        "img",
-        {
-          src: "https://talos-interactive.com/wp-content/uploads/2022/04/GameTelemetryGallery05-1024x576.jpg"
-        }
-      )
+      /* @__PURE__ */ jsx("h1", { className: "text-uppercase", children: "Time Spent in Each Area" }),
+      /* @__PURE__ */ jsx(Bar, { data: barChartData, options: { responsive: true, scales: { x: { beginAtZero: true }, y: { beginAtZero: true } } } })
     ] }) })
   ] });
 }
@@ -2681,6 +2974,9 @@ const ResetPassword = () => {
 function Error404() {
   return /* @__PURE__ */ jsx(Fragment, { children: /* @__PURE__ */ jsx("h1", { children: "Error 404 Page Not Found" }) });
 }
+function Dashboard() {
+  return /* @__PURE__ */ jsx(Fragment, { children: /* @__PURE__ */ jsx(Banner, {}) });
+}
 const App = () => {
   return /* @__PURE__ */ jsxs(Routes, { children: [
     /* @__PURE__ */ jsx(Route, { path: "/play", element: /* @__PURE__ */ jsx(Play, {}) }),
@@ -2691,6 +2987,7 @@ const App = () => {
     /* @__PURE__ */ jsx(Route, { path: "/settings", element: /* @__PURE__ */ jsx(SettingsPage, {}) }),
     /* @__PURE__ */ jsx(Route, { path: "/forgot-password", element: /* @__PURE__ */ jsx(ForgotPassword, {}) }),
     /* @__PURE__ */ jsx(Route, { path: "/reset-password", element: /* @__PURE__ */ jsx(ResetPassword, {}) }),
+    /* @__PURE__ */ jsx(Route, { path: "/dashboard", element: /* @__PURE__ */ jsx(Dashboard, {}) }),
     /* @__PURE__ */ jsx(Route, { path: "/404", element: /* @__PURE__ */ jsx(Error404, {}) })
   ] });
 };
