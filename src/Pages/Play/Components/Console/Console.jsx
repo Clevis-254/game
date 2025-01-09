@@ -1,34 +1,33 @@
 import {useState, useRef, useEffect, forwardRef, useImperativeHandle} from 'react'
 import './ConsoleStyling.css';
 import {speakText} from "@/utility/Speech.jsx";
-import SpeechToText from '@/utility/SpeechToText';
-import { analyzeSentiment, correctInput, cleanseText } from '../../../../utility/Sentiment';
-
 // NOTE : No game logic should be in this module.
 // Accessibility logic is fine (e.g rewind to last dialogue)
 // DESIGN NOTE : We fetch the entire console history every time we reload because this is a small game with few
 // users. If we were to scale up then it would be worth doing only what is needed.
 
+// TODO : Explore not using forwardRefs as they will be depreciated in future versions and perhaps using
+//  useEffect to push custom requests similar to how you push commands from console>game
 export const Console =
-    forwardRef(function Console({transcriptRef, commandToGameTrigger,
-                                    setCommandToGameTrigger, consoleToGameCommandRef, gameAudioRef, ttsAudioRef}, ref) {
+forwardRef(function Console({transcriptRef, commandToGameTrigger,
+                                setCommandToGameTrigger, consoleToGameCommandRef}, ref) {
 
-        // This allows us to add messages to the console from external components
-        useImperativeHandle(ref,() => {
-            return {
-                callPostToConsole: (message, speaker, isTranscript) => {
-                    post_new_input(message,speaker, isTranscript)
-                }
+    // This allows us to add messages to the console from external components
+    useImperativeHandle(ref,() => {
+        return {
+            callPostToConsole: (message, speaker, isTranscript) => {
+                post_new_input(message,speaker, isTranscript)
             }
-        })
-        // TODO : If we are expected to actually deploy this then pull this from a file /
-        //  dynamically find the base url
-        // This base url for some reason is needed sometimes under contexts that
-        // make no sense and probably will be needed in full deployment
-        const BASEURL = "http://localhost:4173"
-        const inputRef = useRef(null);
+        }
+    })
+    // TODO : If we are expected to actually deploy this then pull this from a file /
+    //  dynamically find the base url
+    // This base url for some reason is needed sometimes under contexts that
+    // make no sense and probably will be needed in full deployment
+    const BASEURL = "http://localhost:4173"
+    const inputRef = useRef(null);
 
-        const transcriptContainerRef = useRef(null)
+    const transcriptContainerRef = useRef(null)
 
     // Runs when the page first loads to initially get the history
     useEffect(() => {
@@ -115,7 +114,7 @@ export const Console =
 
 
     // Function to add a user console input client side
-    function new_console_input(inputText) {
+    function new_console_input() {
 
         // (Re)focus the input box
         if (inputRef.current) {
@@ -123,7 +122,7 @@ export const Console =
         }
 
         const console_input_box = document.getElementById("console_input_box")
-        const console_input_text = inputText || console_input_box.value
+        const console_input_text = console_input_box.value
         console_input_box.value = ""
 
         switch (console_input_text) {
@@ -211,9 +210,9 @@ export const Console =
                 }
         }
 
-            // TODO : Check if this is needed since we now do a useEffect for consoleText changes
-            scrollConsoleToBottom()
-        }
+        // TODO : Check if this is needed since we now do a useEffect for consoleText changes
+        scrollConsoleToBottom()
+    }
 
     // POST to db the new message
     function post_new_input(message, speaker, isTranscript) {
@@ -276,15 +275,6 @@ export const Console =
         }
     }
 
-    // Function to handle speech to text
-    const handleSpeechToText = async (speechResult) => {
-        speechResult = cleanseText(speechResult);
-        analyzeSentiment(speechResult);
-        const correctedCommand = await correctInput(speechResult);
-        new_console_input(correctedCommand);
-    };
-
-    
     return (
         <>
             <div className="d-flex justify-content-center gap-3 py-5 bg-dark">
@@ -308,7 +298,6 @@ export const Console =
                     </div>
                 </div>
             </div>
-            <SpeechToText onTextReady={handleSpeechToText} />
         </>
     )
 
