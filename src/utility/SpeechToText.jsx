@@ -26,12 +26,10 @@ const SpeechToText = ({ onTextReady }) => {
                 if (onTextReady) {
                     onTextReady(speechToText);
                 }
-                setIsListening(false);
             };
 
             recognitionRef.current.onerror = (event) => {
                 console.error('Speech recognition error', event);
-                setIsListening(false);
             };
 
             recognitionRef.current.onend = () => {
@@ -51,6 +49,7 @@ const SpeechToText = ({ onTextReady }) => {
         };
     }, [isListening, onTextReady]);
 
+    return null;
 };
 
 export default SpeechToText;

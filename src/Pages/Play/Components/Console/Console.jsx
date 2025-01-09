@@ -1,6 +1,7 @@
 import {useState, useRef, useEffect, forwardRef, useImperativeHandle} from 'react'
 import './ConsoleStyling.css';
 import {speakText} from "@/utility/Speech.jsx";
+import SpeechToText from '../../../../utility/SpeechToText';
 // NOTE : No game logic should be in this module.
 // Accessibility logic is fine (e.g rewind to last dialogue)
 // DESIGN NOTE : We fetch the entire console history every time we reload because this is a small game with few
