@@ -87,6 +87,27 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     let startTimeRiddle = useRef(null)
     let startTimeBoss = useRef(null)
 
+    // Calculates the time spent depending on the area and increments field
+    async function captureHeatmapTime(area) {
+        let elapsedTime = 0; // Default to 0 if no valid start time is found.
+
+         if (area === "forestFight" && startTimeFight.current !== null) {
+             elapsedTime = Math.floor((Date.now() - startTimeFight.current) / 1000)
+             startTimeFight.current = null
+         } else if (area === "forestObstacle" && startTimeObstacle.current !== null) {
+             elapsedTime = Math.floor((Date.now() - startTimeObstacle.current) / 1000)
+             startTimeObstacle.current = null
+         } else if (area === "riddle" && startTimeRiddle.current !== null) {
+             elapsedTime = Math.floor((Date.now() - startTimeRiddle.current) / 1000)
+             startTimeRiddle.current = null
+         } else if (area === "boss" && startTimeBoss.current !== null) {
+             elapsedTime = Math.floor((Date.now() - startTimeBoss.current) / 1000)
+             startTimeBoss.current = null
+         }
+
+        await updateHeatmap(area, elapsedTime)
+    }
+
     // When the page first loads, create an audio player not attached to the DOM, so it isn't visible.
     useEffect(() => {
         audioRef.current = document.createElement("audio")
@@ -110,7 +131,6 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         // Make music audio player
         musicAudio.current = document.createElement("audio")
         musicAudio.current.src = "src/Audio/Game Sounds/battle-music.mp3"
-        incrementAudioFile("battleMusic")
         musicAudio.current.addEventListener("ended", handleMusicEnd)
 
 
@@ -370,10 +390,6 @@ export function GameLogic({ postTextToConsole, transcriptRef,
                                         updateStat(0, 0, 1) // +1 death
                                         postTextToConsole("Musashi was knocked into the ocean! Game Over.", "")
 
-                                        // Heatmap timers
-//                                         const elapsedTimeObstacle = Math.floor((new Date() - startTimeObstacle.current) / 1000)
-//                                         updateHeatmap("forestObstacle", elapsedTimeObstacle)
-
                                         endGame(true)
                                     }
                                 } else {
@@ -443,10 +459,12 @@ export function GameLogic({ postTextToConsole, transcriptRef,
         const elapsedTime = Math.floor((new Date() - startTime.current) / 1000)
         updateStat(elapsedTime, 0, 0)
 
-//         updateHeatmap("forestFight", elapsedTimeFight)
-//         updateHeatmap("forestObstacle", elapsedTimeObstacle)
-//         updateHeatmap("riddle", elapsedTimeFight)
-//         updateHeatmap("boss", elapsedTimeObstacle)
+
+        // Heatmap tracking
+        await captureHeatmapTime("forestFight")
+        await captureHeatmapTime("forestObstacle")
+        await captureHeatmapTime("riddle")
+        await captureHeatmapTime("boss")
 
         // Just to make sure the transcript is printed before this.
         await new Promise(resolve => setTimeout(resolve, 300))
@@ -466,7 +484,13 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             if (gameStarted.current) {
                 const elapsedTime = Math.floor((new Date() - startTime.current) / 1000)
                 updateStat(elapsedTime, 0, 0)
-            }
+
+                // Heatmap tracking
+                captureHeatmapTime("forestFight")
+                captureHeatmapTime("forestObstacle")
+                captureHeatmapTime("riddle")
+                captureHeatmapTime("boss")
+    }
         }
         window.addEventListener('beforeunload', handleBeforeUnload)
 
@@ -586,15 +610,9 @@ export function GameLogic({ postTextToConsole, transcriptRef,
 
     async function riddleStart(){
 
-        startTimeRiddle.current = new Date() // captures time riddle section begins
-
-        // Ends forest section timers
-//         const elapsedTimeFight = Math.floor((new Date() - startTimeFight.current) / 1000)
-//         updateHeatmap("forestFight", elapsedTimeFight)
-//         const elapsedTimeObstacle = Math.floor((new Date() - startTimeObstacle.current) / 1000)
-//         updateHeatmap("forestObstacle", elapsedTimeObstacle)
-
         await new Promise(async (resolve, reject) => {
+
+            startTimeRiddle.current = new Date() // captures time riddle section begins
 
             cancelGame = reject;
 
@@ -684,10 +702,6 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     // Start final fight
     async function finale(){
 
-        // Ends riddle section timer
-//         const elapsedTimeRiddle = Math.floor((new Date() - startTimeRiddle.current) / 1000)
-//         updateHeatmap("riddle", elapsedTimeRiddle)
-
         startTimeBoss.current = new Date() // Captures time boss section starts
 
         await new Promise(async (resolve, reject) => {
@@ -711,10 +725,6 @@ export function GameLogic({ postTextToConsole, transcriptRef,
     async function ending(){
 
          updateStat(0 , 1, 0) // +1 game completion
-
-        // Ends boss section timer
-//         const elapsedTimeBoss = Math.floor((new Date() - startTimeBoss.current) / 1000)
-//         updateHeatmap("boss", elapsedTimeBoss)
 
         await new Promise(async (resolve, reject) => {
 
@@ -793,6 +803,7 @@ export function GameLogic({ postTextToConsole, transcriptRef,
             cancelGame = reject
 
             musicAudio.current.play()
+            incrementAudioFile("battleMusic")
 
             // TODO : Check if removing the second quotes for no speaker actually has an effect
             postTextToConsole("You have entered battle!", "")

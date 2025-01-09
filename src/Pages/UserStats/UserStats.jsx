@@ -53,8 +53,8 @@ export function UserStats() {
             {
                 label: '(Measured in Seconds)',
                 data: [
-                    stats.stats.totalHeatmapForestObstacle,
                     stats.stats.totalHeatmapForestFight,
+                    stats.stats.totalHeatmapForestObstacle,
                     stats.stats.totalHeatmapRiddle,
                     stats.stats.totalHeatmapBoss
                 ],

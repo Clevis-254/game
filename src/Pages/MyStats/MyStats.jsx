@@ -51,8 +51,8 @@ export function MyStats(){
             {
                 label: '(Measured in Seconds)',
                 data: [
-                    stats.heatmap.forestObstacle,
                     stats.heatmap.forestFight,
+                    stats.heatmap.forestObstacle,
                     stats.heatmap.riddle,
                     stats.heatmap.boss
                 ],
