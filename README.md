@@ -1,10 +1,13 @@
 # Toxin Ronin
 
-Toxin Ronin is a game where one embarks on a journey with a night Miyamoto Musashi to achieve the presented challenges and medicine needed by Musashi. The game offers an immersive experience through both text and speech-based communication between players and the game.
+In Toxic Rōnin, you play as Miyamoto Musashi, a Japanese warrior who aspires to become the greatest swordsman alive. In a bout to gain prestige on his path to glory, Musashi kills two combatants of the distinguished Yoshioka school, singlehandedly disgracing their reputation. Now the warriors seek revenge against the wandering samurai who dared to dishonour them…
 ## Technology stack
 The project is built using the following technologies:
+
 **Frontend**: React with Vite - Chosen for its fast development experience and optimal performance through features like Hot Module Replacement (HMR) and optimized builds.
+
 **Backend**: Express.js - Selected for its robust features, middleware support, and excellent integration with MongoDB.
+
 **Database**: MongoDB - Utilized for its flexibility with JSON-like documents and excellent scalability.
 ## Getting started
 ### Prerequisites
@@ -36,8 +39,9 @@ To run the application, run npm run dev for your development server
 ```
 npm run dev
 ```
-or npm run prod for your production server
+or npm run build + npm run prod for your production server
 ```
+npm run build
 npm run prod 
 ```
 ## Key Assumptions and Design principles
@@ -57,9 +61,9 @@ The game implements the following core requirements:
 - [Boorstrap](https://getbootstrap.com/)
 - [React Router](https://reactrouter.com/)
 ### Backend
-- [Expressjs](https://expressjs.com/)- web application framework
+- [Expressjs](https://expressjs.com/) - Web pplication framework
 - [MongoDB](https://www.mongodb.com/) - Nosql database
-- [Mongoose](https://mongoosejs.com/) - MongoDB Modeling tool
+- [Mongoose](https://mongoosejs.com/) - MongoDB modeling tool
 ## contributing
 
 To contribute to the following project, you can do the following
@@ -80,16 +84,17 @@ git commit -m "added feature"
 git push
 ```
 ## License
-This project is part of the cardiff course work assignments and is licensed under the university
+This project is part of the Cardiff University course work and is licensed under the university.
 
 ## Project status
 
-current version 1.0.0
-Last updated 09th. January 2025
+Current Version 1.0
+
+Last Updated 9th of January 2025
 
 ## Contact
 
 For any queries , please contact the group memebers involved in the making of the project 
 
 ### wiki
-below is our git [wiki](https://git.cardiff.ac.uk/c22065407/group-8-cflt/-/wikis/home) for any enquires about the project
+Below is our git [wiki](https://git.cardiff.ac.uk/c22065407/group-8-cflt/-/wikis/home) for any enquires about the project.
