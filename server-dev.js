@@ -396,7 +396,9 @@ app.post("/login", express.json(), async (req, res) => {
             userType: user.UserType
         };
 
-        const redirectPath = user.UserType === 'admin' ? '/dashboard' : '/play';
+        const redirectPath = user.UserType === 'admin' 
+        ? '/dashboard?initial=true'  // Add the initial parameter for admins
+        : '/play';
 
         // Make sure to await the session save
         await new Promise((resolve, reject) => {
@@ -655,9 +657,19 @@ app.post("/post_console_history",ensureAuthenticated ,async (req, res) => {
     }
 })
 //dashboard contains all the admin dashboard needed
-// Replace the existing /dashboard route with this
 app.get('/dashboard', ensureAuthenticated, async (req, res) => {
     try {
+        // Check if the user is an admin
+        if (!req.session.user || req.session.user.userType !== 'admin') {
+            return res.status(403).json({ message: 'Unauthorized access' });
+        }
+
+        // If this is the initial dashboard access after login, redirect to user stats
+        if (req.query.initial === 'true') {
+            return res.redirect('/user-stats');
+        }
+
+        // Otherwise render the dashboard normally
         console.log("admin_dashboard");
         const html = await renderReact(req.originalUrl);
         res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
@@ -666,6 +678,7 @@ app.get('/dashboard', ensureAuthenticated, async (req, res) => {
         res.status(500).send('Internal Server Error');
     }
 });
+
 //getting user-types which will be crucial for the banner
 // Add this new endpoint in your server code
 app.get('/user/type', ensureAuthenticated, async (req, res) => {
