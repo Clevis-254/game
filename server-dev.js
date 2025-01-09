@@ -187,8 +187,8 @@ async function getStatTracker(userId, userType) {
                     help: 0,
                 },
                 heatmap: {
-                    forestObstacle: 0,
                     forestFight: 0,
+                    forestObstacle: 0,
                     riddle: 0,
                     boss: 0,
                 },
@@ -276,8 +276,8 @@ async function save() {
                 help: 3,
             },
             heatmap: {
-                forestObstacle: 100,
                 forestFight: 50,
+                forestObstacle: 100,
                 riddle: 200,
                 boss: 150,
             },
@@ -328,8 +328,8 @@ async function save() {
                 help: 0,
             },
             heatmap: {
-                forestObstacle: 2984,
                 forestFight: 2529,
+                forestObstacle: 2984,
                 riddle: 3007,
                 boss: 3245,
             },
@@ -398,7 +398,7 @@ app.post("/login", express.json(), async (req, res) => {
             userType: user.UserType
         };
 
-        const redirectPath = user.UserType === 'admin' ? '/dashboard' : '/play';
+        const redirectPath = user.UserType === 'admin' ? '/user-stats' : '/play';
 
         // Make sure to await the session save
         await new Promise((resolve, reject) => {
@@ -745,8 +745,8 @@ app.post("/user/stats", ensureAuthenticated, async (req, res) => {
         }
 
         if (heatmap) {
-            if (heatmap.forestObstacle) updateFields["heatmap.forestObstacle"] = heatmap.forestObstacle;
             if (heatmap.forestFight) updateFields["heatmap.forestFight"] = heatmap.forestFight;
+            if (heatmap.forestObstacle) updateFields["heatmap.forestObstacle"] = heatmap.forestObstacle;
             if (heatmap.riddle) updateFields["heatmap.riddle"] = heatmap.riddle;
             if (heatmap.boss) updateFields["heatmap.boss"] = heatmap.boss;
         }
@@ -809,8 +809,8 @@ app.get('/site/stats', async (req, res) => {
                     totalClear: { $sum: "$commands.clear" },
                     totalRewind: { $sum: "$commands.rewind" },
                     totalHelp: { $sum: "$commands.help" },
-                    totalHeatmapForestObstacle: { $sum: "$heatmap.forestObstacle" },
                     totalHeatmapForestFight: { $sum: "$heatmap.forestFight" },
+                    totalHeatmapForestObstacle: { $sum: "$heatmap.forestObstacle" },
                     totalHeatmapRiddle: { $sum: "$heatmap.riddle" },
                     totalHeatmapBoss: { $sum: "$heatmap.boss" }
                 }

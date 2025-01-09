@@ -56,8 +56,8 @@ const UserStatsSchema = new mongoose.Schema({
     help: { type: Number, default: 0 }
   },
   heatmap: {
-    forestObstacle: { type: Number, default: 0 },
     forestFight: { type: Number, default: 0 },
+    forestObstacle: { type: Number, default: 0 },
     riddle: { type: Number, default: 0 },
     boss: { type: Number, default: 0 }
   }
