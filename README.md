@@ -57,9 +57,9 @@ The game implements the following core requirements:
 - [Boorstrap](https://getbootstrap.com/)
 - [React Router](https://reactrouter.com/)
 ### Backend
--[Expressjs](https://expressjs.com/)- web application framework
--[MongoDB](https://www.mongodb.com/) - Nosql database
--[Mongoose](https://mongoosejs.com/) - MongoDB Modeling tool
+- [Expressjs](https://expressjs.com/)- web application framework
+- [MongoDB](https://www.mongodb.com/) - Nosql database
+- [Mongoose](https://mongoosejs.com/) - MongoDB Modeling tool
 ## contributing
 
 To contribute to the following project, you can do the following
@@ -90,3 +90,6 @@ Last updated 09th. January 2025
 ## Contact
 
 For any queries , please contact the group memebers involved in the making of the project 
+
+### wiki
+below is our git [wiki](https://git.cardiff.ac.uk/c22065407/group-8-cflt/-/wikis/home) for any enquires about the project

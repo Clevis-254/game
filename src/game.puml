@@ -1,0 +1,113 @@
+@startuml "TOxin Ronin - System Context"
+
+!define RECTANGLE class
+
+' Styling
+skinparam rectangle {
+    BackgroundColor<<System>> #1168bd
+    FontColor<<System>> #ffffff
+    BorderColor #1168bd
+}
+
+skinparam actor {
+    BackgroundColor #08427b
+    FontColor #ffffff
+    BorderColor #08427b
+}
+
+skinparam component {
+    BackgroundColor #438dd5
+    FontColor #ffffff
+    BorderColor #438dd5
+}
+
+' Actors
+actor "Player" as player
+actor "Admin" as admin
+
+' Systems
+rectangle "GameSystem\n[Software System]\nA system where players play games\nand admins manage the system." <<System>> as gameSystem
+
+' Relationships
+player --> gameSystem : "Plays the game using both\ntext and speech as form\nof communication"
+admin --> gameSystem : "Manages the overall game\nsystem, data and the users"
+
+@enduml
+
+@startuml "TOxin Ronin - Container"
+
+' Styling
+skinparam rectangle {
+    BackgroundColor #438dd5
+    FontColor #ffffff
+    BorderColor #438dd5
+}
+
+skinparam database {
+    BackgroundColor #438dd5
+    FontColor #ffffff
+    BorderColor #438dd5
+}
+
+skinparam actor {
+    BackgroundColor #08427b
+    FontColor #ffffff
+    BorderColor #08427b
+}
+
+' Actors
+actor "Player" as player
+actor "Admin" as admin
+
+' Containers
+rectangle "ReactFrontend\n[Container: React-vite]\nThe user interface for\nplayers and admins" as frontend
+rectangle "ExpressBackend\n[Container: Node.js and Express.js]\nHandles game logic, manages\nplayers, and stores data" as backend
+database "MongoDB\n[Container: MongoDB]\nStores game data" as mongodb
+
+' Relationships
+player --> frontend : "Interacts with"
+admin --> frontend : "Interacts with"
+frontend --> backend : "Sends requests to"
+backend --> mongodb : "Reads from and writes to"
+
+@enduml
+
+@startuml "TOxin Ronin - Components"
+
+' Styling
+skinparam component {
+    BackgroundColor #85bbf0
+    FontColor #ffffff
+    BorderColor #85bbf0
+}
+
+skinparam database {
+    BackgroundColor #438dd5
+    FontColor #ffffff
+    BorderColor #438dd5
+}
+
+skinparam actor {
+    BackgroundColor #08427b
+    FontColor #ffffff
+    BorderColor #08427b
+}
+
+' Actors
+actor "Player" as player
+actor "Admin" as admin
+
+' Components
+component "APIController\n[Component]\nHandles API requests\nfrom the frontend" as apiController
+component "PlayerService\n[Component]\nManages player-related\noperations" as playerService
+component "GameLogicService\n[Component]\nHandles game rules\nand logic" as gameLogicService
+database "MongoDB" as mongodb
+
+' Relationships
+player --> apiController : "Plays the game using"
+admin --> apiController : "Manages system using"
+apiController --> playerService : "Manages players through"
+apiController --> gameLogicService : "Handles game logic through"
+apiController --> mongodb : "Stores and retrieves\nplayer and game data"
+
+@enduml
