@@ -21,7 +21,7 @@ For development purposes, follow the steps below to clone and run the toxin game
 1. clone the repository
 The bash below would clone your repository when you paste it in gitbash in your device
 ```
-git clone https://git.cardiff.ac.uk/c22065407/group-8-cflt.git
+git clone 
 ```
 2. Installing dependencies 
 The project uses node and npm to both setup and run.
